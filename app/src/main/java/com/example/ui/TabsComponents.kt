@@ -34,6 +34,12 @@ import com.example.data.model.*
 import com.example.viewmodel.DietPlannerViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.app.Activity
+import android.content.Intent
+import android.widget.Toast
 
 // ==========================================
 // PROFILE INITIAL SETUP VIEW
@@ -278,10 +284,24 @@ fun ExploreTab(
     isBengali: Boolean,
     onNavigateToTab: (Int) -> Unit
 ) {
+    val context = LocalContext.current
     val recipes by viewModel.allRecipes.collectAsState()
     var selectedRecipe by remember { mutableStateOf<RecipeEntity?>(null) }
     var recipeSearchQuery by remember { mutableStateOf("") }
     var activeSubTool by remember { mutableStateOf<String?>(null) } // "restaurant" or "sos" or null
+
+    // Voice recognition recipe launcher
+    val voiceInputLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull() ?: ""
+            if (spokenText.isNotEmpty()) {
+                recipeSearchQuery = spokenText
+                Toast.makeText(context, "Voice input: $spokenText", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     val filtered = remember(recipes, recipeSearchQuery) {
         recipes.filter {
@@ -316,7 +336,7 @@ fun ExploreTab(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (isBengali) "সুভেচ্ছা এক্সপ্লোর ও ড্যাশবোর্ড" else "Subecha Exploration Center",
+                        text = if (isBengali) "ANEXSOPZ এক্সপ্লোর ও ড্যাশবোর্ড" else "ANEXSOPZ Exploration Center",
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = Color(0xFF5D4037)
@@ -534,12 +554,34 @@ fun ExploreTab(
             }
         }
 
-        // Custom Search Recipe Bar inside Explore Tab
+        // Custom Search Recipe Bar inside Explore Tab with voice support
         OutlinedTextField(
             value = recipeSearchQuery,
             onValueChange = { recipeSearchQuery = it },
-            placeholder = { Text(if (isBengali) "রেসিপি বা উপকরণ খুঁজুন..." else "Search healthy recipes...") },
+            placeholder = { Text(if (isBengali) "কণ্ঠস্বর বা উপাদান দিয়ে খুঁজুন..." else "Search healthy recipes (Voice)...") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            trailingIcon = {
+                IconButton(
+                    onClick = {
+                        try {
+                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                putExtra(RecognizerIntent.EXTRA_PROMPT, if (isBengali) "রেসিপি বা উপকরণ বলুন..." else "Speak recipe ingredient name...")
+                            }
+                            voiceInputLauncher.launch(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Voice speech recognition not supported on device.", Toast.LENGTH_LONG).show()
+                        }
+                    },
+                    modifier = Modifier.testTag("recipe_voice_search_btn")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Mic,
+                        contentDescription = "Search with voice",
+                        tint = Color(0xFF2E7D32)
+                    )
+                }
+            },
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()

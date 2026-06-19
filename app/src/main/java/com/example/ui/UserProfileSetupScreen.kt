@@ -116,7 +116,7 @@ fun UserProfileSetupScreen(
                             Text("🎉", fontSize = 36.sp)
                             Column {
                                 Text(
-                                    text = if (isBengali) "সুভেচ্ছা অ্যাপে আপনাকে স্বাগত!" else "Welcome to Subecha Health!",
+                                    text = if (isBengali) "ANEXSOPZ অ্যাপে আপনাকে স্বাগত!" else "Welcome to ANEXSOPZ Health!",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
                                     color = Color(0xFF1B5E20)

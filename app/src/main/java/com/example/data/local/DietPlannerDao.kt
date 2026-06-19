@@ -130,6 +130,21 @@ interface DietPlannerDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMoodLog(moodLog: MoodLogEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMoodLogs(moodLogs: List<MoodLogEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertWaterLogs(waterLogs: List<WaterLogEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertWeightLogs(weightLogs: List<WeightLogEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertFoodLogs(foodLogs: List<FoodLogEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertExerciseLogs(exerciseLogs: List<ExerciseLogEntity>)
+
     @Query("DELETE FROM mood_logs WHERE id = :id")
     suspend fun deleteMoodLog(id: Int)
 }

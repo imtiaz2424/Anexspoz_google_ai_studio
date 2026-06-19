@@ -112,7 +112,7 @@ fun DietPlannerDashboard(viewModel: DietPlannerViewModel) {
             isBengali = isBengali,
             onLogin = { email, password, onResult ->
                 viewModel.login(email, password) { success, error ->
-                    if (success && email == "guest@subecha.com") {
+                    if (success && (email == "guest@anexsopz.com" || email == "guest@subecha.com")) {
                         viewModel.preloadAllDemoDataForUser("guest")
                     }
                     onResult(success, error)
@@ -120,7 +120,7 @@ fun DietPlannerDashboard(viewModel: DietPlannerViewModel) {
             },
             onSignUp = { email, password, onResult ->
                 viewModel.signup(email, password) { success, error ->
-                    if (success && email == "guest@subecha.com") {
+                    if (success && (email == "guest@anexsopz.com" || email == "guest@subecha.com")) {
                         viewModel.preloadAllDemoDataForUser("guest")
                     }
                     onResult(success, error)
@@ -690,42 +690,44 @@ fun DietPlannerDashboard(viewModel: DietPlannerViewModel) {
                     onBack = { showShoppingListScreen = false }
                 )
             } else {
-                when (currentTab) {
-                    0 -> ToolsTab(
-                        viewModel = viewModel,
-                        reminders = reminders,
-                        userProfile = userProfile!!,
-                        selectedDate = selectedDate
-                    )
-                    1 -> MealPlanTab(
-                        viewModel = viewModel,
-                        selectedDate = selectedDate,
-                        mealPlan = currentMealPlan,
-                        isGenerating = isGenerating,
-                        userProfile = userProfile!!,
-                        context = context,
-                        onNavigateToShoppingList = { showShoppingListScreen = true }
-                    )
-                    2 -> ExploreTab(
-                        viewModel = viewModel,
-                        isBengali = isBengali,
-                        onNavigateToTab = { tabIndex -> currentTab = tabIndex }
-                    )
-                    3 -> ProgressTrackerTab(
-                        viewModel = viewModel,
-                        weightLogs = weightLogs,
-                        waterLog = waterLog,
-                        userProfile = userProfile!!,
-                        selectedDate = selectedDate
-                    )
-                    4 -> ProfileEditTab(
-                        userProfile = userProfile!!,
-                        isBengali = isBengali,
-                        onNavigateToHealthPrefs = { showHealthPrefsScreen = true },
-                        onSave = { age, gender, weight, height, goal, preference, allergies, medical, cuisine ->
-                            viewModel.saveProfile(age, gender, weight, height, goal, preference, allergies, medical, cuisine)
-                        }
-                    )
+                Crossfade(targetState = currentTab, label = "TabTransition") { targetTab ->
+                    when (targetTab) {
+                        0 -> ToolsTab(
+                            viewModel = viewModel,
+                            reminders = reminders,
+                            userProfile = userProfile!!,
+                            selectedDate = selectedDate
+                        )
+                        1 -> MealPlanTab(
+                            viewModel = viewModel,
+                            selectedDate = selectedDate,
+                            mealPlan = currentMealPlan,
+                            isGenerating = isGenerating,
+                            userProfile = userProfile!!,
+                            context = context,
+                            onNavigateToShoppingList = { showShoppingListScreen = true }
+                        )
+                        2 -> ExploreTab(
+                            viewModel = viewModel,
+                            isBengali = isBengali,
+                            onNavigateToTab = { tabIndex -> currentTab = tabIndex }
+                        )
+                        3 -> ProgressTrackerTab(
+                            viewModel = viewModel,
+                            weightLogs = weightLogs,
+                            waterLog = waterLog,
+                            userProfile = userProfile!!,
+                            selectedDate = selectedDate
+                        )
+                        4 -> ProfileEditTab(
+                            userProfile = userProfile!!,
+                            isBengali = isBengali,
+                            onNavigateToHealthPrefs = { showHealthPrefsScreen = true },
+                            onSave = { age, gender, weight, height, goal, preference, allergies, medical, cuisine ->
+                                viewModel.saveProfile(age, gender, weight, height, goal, preference, allergies, medical, cuisine)
+                            }
+                        )
+                    }
                 }
             }
         }

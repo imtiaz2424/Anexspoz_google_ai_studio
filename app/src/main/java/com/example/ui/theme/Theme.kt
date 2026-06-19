@@ -10,31 +10,43 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
+import androidx.compose.ui.graphics.Color
+
 private val DarkColorScheme =
-  darkColorScheme(primary = Purple80, secondary = PurpleGrey80, tertiary = Pink80)
+  darkColorScheme(
+    primary = Color(0xFF81C784),      // High visibility light green for dark mode
+    secondary = Color(0xFFA5D6A7),
+    tertiary = Color(0xFFC8E6C9),
+    background = Color(0xFF121212),     // True deep slate theme backgrounds
+    surface = Color(0xFF1E1E1E),
+    onPrimary = Color(0xFF1B5E20),
+    onSecondary = Color(0xFF1B5E20),
+    onBackground = Color(0xFFE0E0E0),
+    onSurface = Color(0xFFEEEEEE),
+    primaryContainer = Color(0xFF2E7D32),
+    onPrimaryContainer = Color(0xFFE8F5E9)
+  )
 
 private val LightColorScheme =
   lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40,
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
+    primary = Color(0xFF2E7D32),       // Signature ANEXSOPZ Green
+    secondary = Color(0xFF4CAF50),
+    tertiary = Color(0xFF81C784),
+    background = Color(0xFFFAFAFA),    // Clean paper-white backgrounds
+    surface = Color(0xFFFFFFFF),
     onPrimary = Color.White,
     onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    onBackground = Color(0xFF212121),
+    onSurface = Color(0xFF212121),
+    primaryContainer = Color(0xFFE8F5E9),
+    onPrimaryContainer = Color(0xFF2E7D32)
   )
 
 @Composable
 fun MyApplicationTheme(
   darkTheme: Boolean = isSystemInDarkTheme(),
   // Dynamic color is available on Android 12+
-  dynamicColor: Boolean = true,
+  dynamicColor: Boolean = false,
   content: @Composable () -> Unit,
 ) {
   val colorScheme =

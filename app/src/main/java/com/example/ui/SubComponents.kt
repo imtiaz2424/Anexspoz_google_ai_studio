@@ -31,6 +31,10 @@ import com.example.viewmodel.DietPlannerViewModel
 import java.io.File
 import androidx.core.content.FileProvider
 import java.util.Locale
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.app.Activity
 
 data class PresetFoodItem(
     val nameEn: String,
@@ -625,6 +629,7 @@ fun ANEXSOPZSearchDialog(
     onDismiss: () -> Unit,
     onNavigateToTab: (Int) -> Unit
 ) {
+    val context = LocalContext.current
     var searchInput by remember { mutableStateOf("") }
     val mockPages = listOf(
         "Meal Plan (খাবারের রেসিপি ও ডায়েট)" to 1,
@@ -633,6 +638,19 @@ fun ANEXSOPZSearchDialog(
         "Explore Tab (সুষম খাদ্য জ্ঞান)" to 2,
         "User Profile (প্রোফাইল মেজারমেন্ট)" to 4
     )
+
+    // Voice Input Speech Recognizer Launcher logic
+    val voiceInputLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull() ?: ""
+            if (spokenText.isNotEmpty()) {
+                searchInput = spokenText
+                Toast.makeText(context, "Voice input: $spokenText", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     val filtered = mockPages.filter {
         it.first.lowercase().contains(searchInput.lowercase())
@@ -655,8 +673,30 @@ fun ANEXSOPZSearchDialog(
                 OutlinedTextField(
                     value = searchInput,
                     onValueChange = { searchInput = it },
-                    placeholder = { Text("Search for tracking pages...") },
+                    placeholder = { Text(if (isBengali) "কণ্ঠস্বর বা নাম দিয়ে খুঁজুন..." else "Search pages (Voice enabled)...") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                try {
+                                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                        putExtra(RecognizerIntent.EXTRA_PROMPT, if (isBengali) "অনুগ্রহ করে কথা বলুন..." else "Speak now search query...")
+                                    }
+                                    voiceInputLauncher.launch(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Voice speech recognition not supported on device.", Toast.LENGTH_LONG).show()
+                                }
+                            },
+                            modifier = Modifier.testTag("global_search_voice_btn")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Mic,
+                                contentDescription = "Voice Input Mic",
+                                tint = Color(0xFF00796B)
+                            )
+                        }
+                    },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag("app_global_search_input")
                 )
@@ -744,7 +784,7 @@ fun ANEXSOPZPrivacyPolicyDialog(isBengali: Boolean, onDismiss: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "Suvecha values your personal and biological weights records. We guarantee 100% security with no servers-side leaks.",
+                    text = "ANEXSOPZ values your personal and biological weights records. We guarantee 100% security with no servers-side leaks.",
                     fontSize = 12.sp,
                     color = Color.DarkGray
                 )
@@ -848,7 +888,7 @@ fun ANEXSOPZAppInfoDialog(isBengali: Boolean, onDismiss: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "Suvecha Diet Planner helps you maintain stable metabolic states. Key functions include:",
+                    text = "ANEXSOPZ Diet Planner helps you maintain stable metabolic states. Key functions include:",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -1013,13 +1053,13 @@ fun sharePdf(context: Context, file: File) {
 
 fun shareMealPlanToSocial(context: Context, mealPlan: MealPlanEntity) {
     val shareText = """
-        My Healthy AI Diet Plan of the Day (${mealPlan.date}) via Suvecha:
+        My Healthy AI Diet Plan of the Day (${mealPlan.date}) via ANEXSOPZ:
         - Breakfast: ${mealPlan.breakfast} (${mealPlan.breakfastCal} kcal)
         - Lunch: ${mealPlan.lunch} (${mealPlan.lunchCal} kcal)
         - Dinner: ${mealPlan.dinner} (${mealPlan.dinnerCal} kcal)
         - Baseline Target Calorie: ${mealPlan.calorieTarget} kcal
         
-        Stay fit and eat smart! Download Suvecha App in Android now.
+        Stay fit and eat smart! Download ANEXSOPZ App in Android now.
     """.trimIndent()
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"

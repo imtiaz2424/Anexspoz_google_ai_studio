@@ -76,10 +76,10 @@ fun MoodTrendChart(
 
             // Mood score conversion (1 to 5 scale)
             val moodScore = when (moodString.lowercase(Locale.ROOT)) {
-                "happy" -> 5f
-                "energized", "calm" -> 4f
-                "neutral" -> 3f
-                "stressed", "tired" -> 2f
+                "excellent", "happy" -> 5f
+                "good", "energized", "calm" -> 4f
+                "normal", "neutral" -> 3f
+                "anxious", "stressed", "tired" -> 2f
                 "sad", "angry" -> 1f
                 else -> 3f // Default fallback for unlogged days
             }
@@ -354,11 +354,11 @@ fun MoodTrendChart(
                             )
 
                             val moodLabel = when (item.moodString.lowercase(Locale.ROOT)) {
-                                "happy" -> if (isBengali) "😊 অত্যন্ত আনন্দিত" else "😊 Happy"
-                                "energized" -> if (isBengali) "⚡ অফুরন্ত শক্তি" else "⚡ Energized"
-                                "calm" -> if (isBengali) "🧘 শান্ত ও সমাহিত" else "🧘 Calm"
-                                "stressed" -> if (isBengali) "😰 মানসিক চাপ" else "😰 Stressed"
-                                "sad" -> if (isBengali) "😢 বিষণ্ণ বা ক্লান্ত" else "😢 Sad"
+                                "excellent", "happy" -> if (isBengali) "😊 অত্যন্ত চমৎকার" else "😊 Excellent / Happy"
+                                "good", "calm", "energized" -> if (isBengali) "🙂 বেশ ভালো / শান্ত" else "🙂 Good / Calm"
+                                "normal", "neutral" -> if (isBengali) "😐 স্বাভাবিক" else "😐 Normal / Neutral"
+                                "anxious", "stressed", "tired" -> if (isBengali) "😰 উদ্বিগ্ন / বিষণ্ণ" else "😰 Anxious / Stressed"
+                                "sad", "angry" -> if (isBengali) "😢 মন খারাপ" else "😢 Sad / Angry"
                                 else -> if (isBengali) "😐 সাধারণ দিন" else "😐 Neutral / Unlogged"
                             }
                             Text(

@@ -42,6 +42,16 @@ fun ANEXSOPZLoginScreen(
     var successMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
 
+    // Validation State variables
+    var isEmailError by remember { mutableStateOf(false) }
+    var isPasswordError by remember { mutableStateOf(false) }
+    var isPhoneError by remember { mutableStateOf(false) }
+    var isNameError by remember { mutableStateOf(false) }
+    var emailErrorMsg by remember { mutableStateOf("") }
+    var passwordErrorMsg by remember { mutableStateOf("") }
+    var phoneErrorMsg by remember { mutableStateOf("") }
+    var nameErrorMsg by remember { mutableStateOf("") }
+
     // Dialog for Forgot Password
     var isForgotPasswordDialogOpen by remember { mutableStateOf(false) }
     var forgotEmail by remember { mutableStateOf("") }
@@ -136,7 +146,7 @@ fun ANEXSOPZLoginScreen(
         ) {
             // Animated main mascot logo of the brand
             ANEXSOPZModernLogo(
-                modifier = Modifier.size(100.dp),
+                modifier = Modifier.wrapContentSize().height(80.dp),
                 showText = true,
                 isBengali = isBengali
             )
@@ -175,7 +185,7 @@ fun ANEXSOPZLoginScreen(
 
                         Text(
                             text = if (isBengali)
-                                "নতুন সুভেচ্ছা অ্যাকাউন্টের তথ্যের সঠিকতা যাচাই করার জন্য আপনার ইমেইল ও ফোনে ওটিপি পাঠানো হয়েছে।"
+                                "নতুন ANEXSOPZ অ্যাকাউন্টের তথ্যের সঠিকতা যাচাই করার জন্য আপনার ইমেইল ও ফোনে ওটিপি পাঠানো হয়েছে।"
                                 else "A confirmation link has been sent to your email. An SMS authorization code was also dispatched to your phone.",
                             fontSize = 11.sp,
                             color = Color.Gray,
@@ -243,7 +253,7 @@ fun ANEXSOPZLoginScreen(
                     ) {
                         Text(
                             text = if (isSignUpMode) {
-                                if (isBengali) "নতুন সুভেচ্ছা অ্যাকাউন্ট তৈরি" else "Create Subecha Account"
+                                if (isBengali) "নতুন ANEXSOPZ অ্যাকাউন্ট তৈরি" else "Create ANEXSOPZ Account"
                             } else {
                                 if (isBengali) "আপনার অ্যাকাউন্টে প্রবেশ করুন" else "Welcome Back!"
                             },
@@ -254,17 +264,35 @@ fun ANEXSOPZLoginScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
 
-                        Text(
-                            text = if (isSignUpMode) {
-                                if (isBengali) "আপনার সঠিক ইমেইল ও পাসওয়ার্ড প্রদান করুন" else "Create biological track cycles in one single step"
-                            } else {
-                                if (isBengali) "আপনার পাসওয়ার্ড ও ইমেইল টাইপ করে সাইন-ইন করুন" else "Sign in to log calories, water, and weight instantly"
-                            },
-                            fontSize = 11.sp,
-                            color = Color.Gray,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        if (isSignUpMode) {
+                            Text(
+                                text = if (isBengali) "আপনার পুরো নাম, ইমেল, ফোন নম্বর এবং পাসওয়ার্ড যোগ করুন" else "Add your full name, email, phone number and password",
+                                fontSize = 11.sp,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        } else {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    text = if (isBengali) "সাইন ইন" else "Sign In",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.5.sp,
+                                    color = Color(0xFF2E7D32),
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = if (isBengali) "আপনার লগইন তথ্য প্রদান করুন" else "Provide your login credentials",
+                                    fontSize = 11.sp,
+                                    color = Color.Gray,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
 
                         // Error Message
                         errorMessage?.let { error ->
@@ -310,11 +338,16 @@ fun ANEXSOPZLoginScreen(
                         if (isSignUpMode) {
                             OutlinedTextField(
                                 value = fullName,
-                                onValueChange = { fullName = it },
+                                onValueChange = { 
+                                    fullName = it
+                                    isNameError = false 
+                                },
                                 label = { Text("Full Name") },
                                 placeholder = { Text("Your Complete Name") },
                                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF2E7D32)) },
                                 singleLine = true,
+                                isError = isNameError,
+                                supportingText = if (isNameError) { { Text(nameErrorMsg, color = MaterialTheme.colorScheme.error, fontSize = 10.sp) } } else null,
                                 modifier = Modifier.fillMaxWidth().testTag("auth_full_name_field"),
                                 shape = RoundedCornerShape(12.dp)
                             )
@@ -323,12 +356,17 @@ fun ANEXSOPZLoginScreen(
                         // Email Field
                         OutlinedTextField(
                             value = email,
-                            onValueChange = { email = it },
+                            onValueChange = { 
+                                email = it
+                                isEmailError = false 
+                            },
                             label = { Text("Email Address") },
                             placeholder = { Text("example@anexsopz.com") },
                             leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFF2E7D32)) },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            isError = isEmailError,
+                            supportingText = if (isEmailError) { { Text(emailErrorMsg, color = MaterialTheme.colorScheme.error, fontSize = 10.sp) } } else null,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("auth_email_field"),
@@ -339,12 +377,17 @@ fun ANEXSOPZLoginScreen(
                         if (isSignUpMode) {
                             OutlinedTextField(
                                 value = phone,
-                                onValueChange = { phone = it },
+                                onValueChange = { 
+                                    phone = it
+                                    isPhoneError = false 
+                                },
                                 label = { Text("Phone Number") },
                                 placeholder = { Text("+880 1712-345678") },
                                 leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF2E7D32)) },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                isError = isPhoneError,
+                                supportingText = if (isPhoneError) { { Text(phoneErrorMsg, color = MaterialTheme.colorScheme.error, fontSize = 10.sp) } } else null,
                                 modifier = Modifier.fillMaxWidth().testTag("auth_phone_field"),
                                 shape = RoundedCornerShape(12.dp)
                             )
@@ -353,7 +396,10 @@ fun ANEXSOPZLoginScreen(
                         // Password Field
                         OutlinedTextField(
                             value = password,
-                            onValueChange = { password = it },
+                            onValueChange = { 
+                                password = it
+                                isPasswordError = false 
+                            },
                             label = { Text("Account Password") },
                             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF2E7D32)) },
                             trailingIcon = {
@@ -368,6 +414,8 @@ fun ANEXSOPZLoginScreen(
                             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            isError = isPasswordError,
+                            supportingText = if (isPasswordError) { { Text(passwordErrorMsg, color = MaterialTheme.colorScheme.error, fontSize = 10.sp) } } else null,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("auth_password_field"),
@@ -411,8 +459,8 @@ fun ANEXSOPZLoginScreen(
                                 )
                                 Text(
                                     text = if (isBengali)
-                                        "আমি সুভেচ্ছা ব্যবহারের সব নীতিমালা ও শর্তাবলীতে সম্মতি জানাচ্ছি"
-                                        else "I agree to all Subecha Terms, Conditions and Privacy policy.",
+                                        "আমি ANEXSOPZ ব্যবহারের সব নীতিমালা ও শর্তাবলীতে সম্মতি জানাচ্ছি"
+                                        else "I agree to all ANEXSOPZ Terms, Conditions and Privacy policy.",
                                     fontSize = 10.5.sp,
                                     color = Color.DarkGray,
                                     lineHeight = 14.sp
@@ -425,43 +473,83 @@ fun ANEXSOPZLoginScreen(
                         // Main Action Button
                         Button(
                             onClick = {
-                                successMessage = null
+                                // Reset all error states
+                                isEmailError = false
+                                isPasswordError = false
+                                isPhoneError = false
+                                isNameError = false
+                                emailErrorMsg = ""
+                                passwordErrorMsg = ""
+                                phoneErrorMsg = ""
+                                nameErrorMsg = ""
                                 errorMessage = null
+                                successMessage = null
+
+                                var hasError = false
 
                                 if (isSignUpMode) {
                                     if (fullName.isBlank()) {
-                                        errorMessage = "Please enter your Full Name."
-                                        return@Button
+                                        isNameError = true
+                                        nameErrorMsg = if (isBengali) "অনুগ্রহ করে আপনার পুরো নাম লিখুন।" else "Please enter your Full Name."
+                                        hasError = true
                                     }
                                     if (email.isBlank()) {
-                                        errorMessage = "Please enter your Email."
-                                        return@Button
+                                        isEmailError = true
+                                        emailErrorMsg = if (isBengali) "অনুগ্রহ করে একটি ইমেল ঠিকানা লিখুন।" else "Please enter your Email."
+                                        hasError = true
+                                    } else {
+                                        val emailPattern = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$"
+                                        if (!email.trim().matches(emailPattern.toRegex())) {
+                                            isEmailError = true
+                                            emailErrorMsg = if (isBengali) "অনুগ্রহ করে একটি সঠিক ইমেল প্রবেশ করান।" else "Please enter a valid Email address."
+                                            hasError = true
+                                        }
                                     }
                                     if (phone.isBlank()) {
-                                        errorMessage = "Please enter your Phone number."
-                                        return@Button
+                                        isPhoneError = true
+                                        phoneErrorMsg = if (isBengali) "অনুগ্রহ করে ফোন নম্বর লিখুন।" else "Please enter your Phone number."
+                                        hasError = true
                                     }
                                     if (password.isBlank()) {
-                                        errorMessage = "Please enter a Password."
-                                        return@Button
-                                    }
-                                    if (password.length < 6) {
-                                        errorMessage = "Password must be at least 6 characters long."
-                                        return@Button
+                                        isPasswordError = true
+                                        passwordErrorMsg = if (isBengali) "অনুগ্রহ করে একটি পাসওয়ার্ড লিখুন।" else "Please enter a Password."
+                                        hasError = true
+                                    } else if (password.length < 6) {
+                                        isPasswordError = true
+                                        passwordErrorMsg = if (isBengali) "পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।" else "Password must be at least 6 characters long."
+                                        hasError = true
                                     }
                                     if (!isTermsAgreed) {
-                                        errorMessage = "You must agree to the Terms & Conditions."
-                                        return@Button
+                                        errorMessage = if (isBengali) "আপনাকে অবশ্যই শর্তাবলীতে সম্মতি দিতে হবে।" else "You must agree to the Terms & Conditions."
+                                        hasError = true
                                     }
                                 } else {
-                                    if (email.isBlank() || password.isBlank()) {
-                                        errorMessage = "Please enter both Email and Password fields."
-                                        return@Button
+                                    if (email.isBlank()) {
+                                        isEmailError = true
+                                        emailErrorMsg = if (isBengali) "অনুগ্রহ করে ইমেল লিখুন।" else "Please enter your Email."
+                                        hasError = true
+                                    } else {
+                                        val emailPattern = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$"
+                                        if (!email.trim().matches(emailPattern.toRegex())) {
+                                            isEmailError = true
+                                            emailErrorMsg = if (isBengali) "অনুগ্রহ করে একটি সঠিক ইমেল প্রবেশ করান।" else "Please enter a valid Email address."
+                                            hasError = true
+                                        }
                                     }
-                                    if (password.length < 6) {
-                                        errorMessage = "Password must be at least 6 characters long."
-                                        return@Button
+                                    if (password.isBlank()) {
+                                        isPasswordError = true
+                                        passwordErrorMsg = if (isBengali) "অনুগ্রহ করে পাসওয়ার্ড লিখুন।" else "Please enter your Password."
+                                        hasError = true
+                                    } else if (password.length < 6) {
+                                        isPasswordError = true
+                                        passwordErrorMsg = if (isBengali) "পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।" else "Password must be at least 6 characters long."
+                                        hasError = true
                                     }
+                                }
+
+                                if (hasError) {
+                                    errorMessage = if (isBengali) "ফর্মের তথ্যগুলো সঠিক নয়। লাল চিহ্নিত ঘরগুলো পরীক্ষা করুন।" else "Form validation failed. Please check the marked fields."
+                                    return@Button
                                 }
 
                                 isLoading = true
@@ -553,10 +641,10 @@ fun ANEXSOPZLoginScreen(
                     onClick = {
                         isLoading = true
                         successMessage = null
-                        onLogin("guest@subecha.com", "password123") { success, _ ->
+                        onLogin("guest@anexsopz.com", "password123") { success, _ ->
                             isLoading = false
                             if (!success) {
-                                onSignUp("guest@subecha.com", "password123") { s, _ ->
+                                onSignUp("guest@anexsopz.com", "password123") { s, _ ->
                                     if (!s) errorMessage = "Guest bypass offline failure."
                                 }
                             }

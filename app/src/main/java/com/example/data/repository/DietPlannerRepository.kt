@@ -29,6 +29,26 @@ class DietPlannerRepository(private val dao: DietPlannerDao) {
         dao.insertMoodLog(moodLog)
     }
 
+    suspend fun saveMoodLogs(moodLogs: List<MoodLogEntity>) = withContext(Dispatchers.IO) {
+        dao.insertMoodLogs(moodLogs)
+    }
+
+    suspend fun saveWaterLogs(waterLogs: List<WaterLogEntity>) = withContext(Dispatchers.IO) {
+        dao.insertWaterLogs(waterLogs)
+    }
+
+    suspend fun saveWeightLogs(weightLogs: List<WeightLogEntity>) = withContext(Dispatchers.IO) {
+        dao.insertWeightLogs(weightLogs)
+    }
+
+    suspend fun saveFoodLogs(foodLogs: List<FoodLogEntity>) = withContext(Dispatchers.IO) {
+        dao.insertFoodLogs(foodLogs)
+    }
+
+    suspend fun saveExerciseLogs(exerciseLogs: List<ExerciseLogEntity>) = withContext(Dispatchers.IO) {
+        dao.insertExerciseLogs(exerciseLogs)
+    }
+
     suspend fun deleteMoodLog(id: Int) = withContext(Dispatchers.IO) {
         dao.deleteMoodLog(id)
     }

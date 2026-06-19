@@ -231,6 +231,19 @@ class DietPlannerViewModel(
         }
     }
 
+    fun saveCustomCalorieTarget(calories: Int, waterTargetMl: Int) {
+        viewModelScope.launch {
+            userProfile.value?.let { profile ->
+                val updatedProfile = profile.copy(
+                    dailyCalorieTarget = calories,
+                    dailyWaterTargetMl = waterTargetMl
+                )
+                repository.saveUserProfile(updatedProfile)
+                _eventMessage.value = "নতুন ক্যালোরি এবং পানির লক্ষ্য সফলভাবে সেট করা হয়েছে! (Custom targets applied!)"
+            }
+        }
+    }
+
     fun updateHealthPreferences(medicalConditions: List<String>, cuisinePreferences: List<String>) {
         viewModelScope.launch {
             userProfile.value?.let { profile ->
@@ -521,16 +534,21 @@ class DietPlannerViewModel(
             val cal = Calendar.getInstance()
             
             // 1. Water logs
-            repository.saveWaterLog(WaterLogEntity(date = sDate, amountMl = 1750))
+            val waterLogsList = listOf(
+                WaterLogEntity(date = sDate, amountMl = 1750)
+            )
+            repository.saveWaterLogs(waterLogsList)
             
             // 2. Weight logs for some recent dates (e.g. last 7 days)
+            val weightLogsList = mutableListOf<WeightLogEntity>()
             for (i in 0..6) {
                 cal.time = Date()
                 cal.add(Calendar.DATE, -i)
                 val targetDate = sdf.format(cal.time)
                 val wt = 71.8 + (i * 0.28)
-                repository.saveWeightLog(wt, targetDate)
+                weightLogsList.add(WeightLogEntity(date = targetDate, weight = wt))
             }
+            repository.saveWeightLogs(weightLogsList)
             
             // 3. MoodLogs for last 7 days
             val moods = listOf("Excellent", "Good", "Normal", "Anxious", "Stressed", "Good", "Excellent")
@@ -546,11 +564,12 @@ class DietPlannerViewModel(
             val foods = listOf("Salad & Salmon", "Oatmeal with Blueberries", "Brown Rice & Lentils", "Fruits & Walnuts", "Grilled Chicken Breast", "Boiled Egg & Toast", "Vegetable Soup")
             val activities = listOf("Walking", "Stretching", "Cardio Jogging", "Yoga", "Mindful Breathing", "Strength Exercise", "Meditation")
             
+            val moodLogsList = mutableListOf<MoodLogEntity>()
             for (i in 0..6) {
                 cal.time = Date()
                 cal.add(Calendar.DATE, -i)
                 val targetDate = sdf.format(cal.time)
-                repository.saveMoodLog(MoodLogEntity(
+                moodLogsList.add(MoodLogEntity(
                     userId = uid,
                     date = targetDate,
                     mood = moods[i],
@@ -559,49 +578,56 @@ class DietPlannerViewModel(
                     activity = activities[i]
                 ))
             }
+            repository.saveMoodLogs(moodLogsList)
             
             // 4. Food logs for today (selectedDate)
-            repository.saveFoodLog(FoodLogEntity(
-                userId = uid,
-                date = sDate,
-                name = "Morning Breakfast: Oatmeal & Banana",
-                calories = 380,
-                protein = 12.0,
-                carbs = 65.0,
-                fat = 6.0
-            ))
-            repository.saveFoodLog(FoodLogEntity(
-                userId = uid,
-                date = sDate,
-                name = "Healthy Salad Lunch: Chicken & Quinoa",
-                calories = 540,
-                protein = 46.0,
-                carbs = 45.0,
-                fat = 12.0
-            ))
-            repository.saveFoodLog(FoodLogEntity(
-                userId = uid,
-                date = sDate,
-                name = "Healthy Dinner: Grilled Salmon & Broccoli",
-                calories = 420,
-                protein = 38.0,
-                carbs = 10.0,
-                fat = 18.0
-            ))
+            val foodLogsList = listOf(
+                FoodLogEntity(
+                    userId = uid,
+                    date = sDate,
+                    name = "Morning Breakfast: Oatmeal & Banana",
+                    calories = 380,
+                    protein = 12.0,
+                    carbs = 65.0,
+                    fat = 6.0
+                ),
+                FoodLogEntity(
+                    userId = uid,
+                    date = sDate,
+                    name = "Healthy Salad Lunch: Chicken & Quinoa",
+                    calories = 540,
+                    protein = 46.0,
+                    carbs = 45.0,
+                    fat = 12.0
+                ),
+                FoodLogEntity(
+                    userId = uid,
+                    date = sDate,
+                    name = "Healthy Dinner: Grilled Salmon & Broccoli",
+                    calories = 420,
+                    protein = 38.0,
+                    carbs = 10.0,
+                    fat = 18.0
+                )
+            )
+            repository.saveFoodLogs(foodLogsList)
             
             // 5. Exercise logs for today (selectedDate)
-            repository.saveExerciseLog(ExerciseLogEntity(
-                date = sDate,
-                activity = "Cardio Jogging",
-                durationMin = 30,
-                caloriesBurned = 280
-            ))
-            repository.saveExerciseLog(ExerciseLogEntity(
-                date = sDate,
-                activity = "Yoga Stretching",
-                durationMin = 15,
-                caloriesBurned = 80
-            ))
+            val exerciseLogsList = listOf(
+                ExerciseLogEntity(
+                    date = sDate,
+                    activity = "Cardio Jogging",
+                    durationMin = 30,
+                    caloriesBurned = 280
+                ),
+                ExerciseLogEntity(
+                    date = sDate,
+                    activity = "Yoga Stretching",
+                    durationMin = 15,
+                    caloriesBurned = 80
+                )
+            )
+            repository.saveExerciseLogs(exerciseLogsList)
             
             _eventMessage.value = if (_isBengali.value) {
                 "ডেমো প্লেগ্রাউন্ড ডাটা সফলভাবে লোড করা হয়েছে!"
@@ -613,7 +639,7 @@ class DietPlannerViewModel(
 
     fun login() {
         // Fallback for simple calls if any exist
-        login("user@subecha.com", "password123") { _, _ -> }
+        login("user@anexsopz.com", "password123") { _, _ -> }
     }
 
     fun login(email: String, password: String, onResult: (Boolean, String?) -> Unit) {
@@ -698,13 +724,56 @@ class DietPlannerViewModel(
         if (query.isBlank()) return
         viewModelScope.launch {
             _isSearching.value = true
+            val results = mutableListOf<FoodSearchResult>()
+            
+            // Local Grounding Database of Common Bengali & Standard Foods
+            val queryLower = query.lowercase(Locale.ROOT).trim()
+            val localGroundedItems = listOf(
+                FoodSearchResult("ভাত (White Rice)", 130, 2.7, 28.0, 0.3, "https://images.unsplash.com/photo-1516685018646-549198525c1b?auto=format&fit=crop&w=120&q=80"),
+                FoodSearchResult("মসুর ডাল (Lentil Soup / Dal)", 116, 9.0, 20.0, 0.4, ""),
+                FoodSearchResult("মুরগির মাংসের ঝোল (Chicken Curry)", 165, 18.0, 3.0, 9.0, ""),
+                FoodSearchResult("গরুর মাংসের রেজালা (Beef Curry)", 250, 22.0, 0.0, 17.0, ""),
+                FoodSearchResult("আটা রুটি (Handmade Roti)", 264, 9.0, 55.0, 3.0, ""),
+                FoodSearchResult("মাছের ঝোল (Rui Fish Curry)", 120, 15.0, 2.0, 6.0, ""),
+                FoodSearchResult("ডিম সেদ্ধ (Boiled Egg)", 155, 13.0, 1.1, 11.0, ""),
+                FoodSearchResult("সিঙ্গারা / সমোসা (Singara / Samosa)", 260, 4.0, 30.0, 14.0, ""),
+                FoodSearchResult("আপেল (Apple)", 52, 0.3, 14.0, 0.2, ""),
+                FoodSearchResult("পাকা কলা (Ripe Banana)", 89, 1.1, 23.0, 0.3, ""),
+                FoodSearchResult("গরুর খাঁটি দুধ (Fresh Cow Milk)", 62, 3.2, 5.0, 3.3, "")
+            )
+
+            val matchedGrounding = localGroundedItems.filter {
+                it.name.lowercase(Locale.ROOT).contains(queryLower) ||
+                (queryLower.contains("bhat") && it.name.contains("ভাত")) ||
+                (queryLower.contains("rice") && it.name.contains("ভাত")) ||
+                (queryLower.contains("dal") && it.name.contains("ডাল")) ||
+                (queryLower.contains("murgi") && it.name.contains("মুরগি")) ||
+                (queryLower.contains("chicken") && it.name.contains("মুরগি")) ||
+                (queryLower.contains("meat") && it.name.contains("মাংস")) ||
+                (queryLower.contains("beef") && it.name.contains("গরু")) ||
+                (queryLower.contains("ruti") && it.name.contains("রুটি")) ||
+                (queryLower.contains("roti") && it.name.contains("রুটি")) ||
+                (queryLower.contains("mach") && it.name.contains("মাছ")) ||
+                (queryLower.contains("fish") && it.name.contains("মাছ")) ||
+                (queryLower.contains("egg") && it.name.contains("ডিম")) ||
+                (queryLower.contains("dim") && it.name.contains("ডিম")) ||
+                (queryLower.contains("samosa") && it.name.contains("সিঙ্গারা")) ||
+                (queryLower.contains("singara") && it.name.contains("সিঙ্গারা")) ||
+                (queryLower.contains("apple") && it.name.contains("আপেল")) ||
+                (queryLower.contains("banana") && it.name.contains("কলা")) ||
+                (queryLower.contains("kola") && it.name.contains("কলা")) ||
+                (queryLower.contains("dudh") && it.name.contains("দুধ")) ||
+                (queryLower.contains("milk") && it.name.contains("দুধ"))
+            }
+            results.addAll(matchedGrounding)
+
             try {
                 val client = okhttp3.OkHttpClient()
                 val encodedQuery = java.net.URLEncoder.encode(query, "UTF-8")
                 val url = "https://world.openfoodfacts.org/cgi/search.pl?search_terms=$encodedQuery&search_simple=1&action=process&json=1"
                 val request = okhttp3.Request.Builder()
                     .url(url)
-                    .header("User-Agent", "SuvechaApp - Android - Version 1.0")
+                    .header("User-Agent", "ANEXSOPZApp - Android - Version 1.0")
                     .build()
                 
                 withContext(Dispatchers.IO) {
@@ -714,7 +783,6 @@ class DietPlannerViewModel(
                             if (body != null) {
                                 val json = org.json.JSONObject(body)
                                 val products = json.optJSONArray("products")
-                                val results = mutableListOf<FoodSearchResult>()
                                 if (products != null) {
                                     val count = minOf(products.length(), 25)
                                     for (i in 0 until count) {
@@ -730,20 +798,22 @@ class DietPlannerViewModel(
                                         
                                         val dispName = if (brands.isNotBlank()) "$productName ($brands)" else productName
                                         if (productName.isNotBlank()) {
-                                            results.add(
-                                                FoodSearchResult(
-                                                    name = dispName,
-                                                    calories = calories.toInt(),
-                                                    protein = protein,
-                                                    carbs = carbs,
-                                                    fat = fat,
-                                                    imageUrl = imageUrl
+                                            // Make sure we don't duplicate grounded items
+                                            if (results.none { it.name.equals(dispName, ignoreCase = true) }) {
+                                                results.add(
+                                                    FoodSearchResult(
+                                                        name = dispName,
+                                                        calories = calories.toInt(),
+                                                        protein = protein,
+                                                        carbs = carbs,
+                                                        fat = fat,
+                                                        imageUrl = imageUrl
+                                                    )
                                                 )
-                                            )
+                                            }
                                         }
                                     }
                                 }
-                                _searchResults.value = results
                             }
                         }
                     }
@@ -751,6 +821,7 @@ class DietPlannerViewModel(
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
+                _searchResults.value = results
                 _isSearching.value = false
             }
         }
@@ -772,7 +843,7 @@ class DietPlannerViewModel(
                 val url = "https://world.openfoodfacts.org/api/v0/product/$barcode.json"
                 val request = okhttp3.Request.Builder()
                     .url(url)
-                    .header("User-Agent", "SuvechaApp - Android - Version 1.0")
+                    .header("User-Agent", "ANEXSOPZApp - Android - Version 1.0")
                     .build()
                 
                 withContext(Dispatchers.IO) {

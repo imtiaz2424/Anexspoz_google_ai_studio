@@ -58,6 +58,7 @@ class FirebaseAuthManager(private val context: Context) {
         // Allow Quick Demo Login / Default member easily
         if ((email == "user@anexsopz.com" && password == "password123") || 
             (email == "user@subecha.com" && password == "password123") ||
+            (email == "guest@anexsopz.com" && password == "password123") ||
             (email == "guest@subecha.com" && password == "password123") ||
             savedPassword == password) {
             val uid = "sim_" + Math.abs(email.hashCode()).toString()
