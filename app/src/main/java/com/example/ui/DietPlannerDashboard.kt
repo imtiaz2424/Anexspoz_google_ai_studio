@@ -66,11 +66,11 @@ fun DietPlannerDashboard(viewModel: DietPlannerViewModel) {
     val isDarkTheme by viewModel.isDarkTheme.collectAsState()
 
     // Screen navigation state inside our dashboard (0: Home/Tools, 1: Meals, 2: Explore, 3: Tracker, 4: Account)
-    var currentTab by remember { mutableStateOf(2) }
+    var currentTab by remember { mutableStateOf(0) }
 
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn) {
-            currentTab = 2 // Redirect straight to Explore tab upon login!
+            currentTab = 0 // Redirect straight to Home tab upon login!
         }
     }
 
@@ -133,7 +133,7 @@ fun DietPlannerDashboard(viewModel: DietPlannerViewModel) {
             isBengali = isBengali,
             onComplete = {
                 viewModel.setProfileSetupOnboardingShown(false)
-                currentTab = 2 // Redirect straight to Explore tab
+                currentTab = 0 // Redirect straight to Home tab
             }
         )
     } else {
