@@ -65,11 +65,11 @@ fun DietPlannerDashboard(viewModel: DietPlannerViewModel) {
     val isDarkTheme by viewModel.isDarkTheme.collectAsState()
 
     // Screen navigation state inside our dashboard (0: Home/Tools, 1: Meals, 2: Explore, 3: Tracker, 4: Account)
-    var currentTab by remember { mutableStateOf(0) }
+    var currentTab by remember { mutableStateOf(2) }
 
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn) {
-            currentTab = 0 // Redirect straight to Home/Tools tab upon login!
+            currentTab = 2 // Redirect straight to Explore tab upon login!
         }
     }
 

@@ -280,6 +280,7 @@ fun ExploreTab(
     val recipes by viewModel.allRecipes.collectAsState()
     var selectedRecipe by remember { mutableStateOf<RecipeEntity?>(null) }
     var recipeSearchQuery by remember { mutableStateOf("") }
+    var activeSubTool by remember { mutableStateOf<String?>(null) } // "restaurant" or "sos" or null
 
     val filtered = remember(recipes, recipeSearchQuery) {
         recipes.filter {
@@ -314,22 +315,190 @@ fun ExploreTab(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (isBengali) "পুষ্টি এবং ডায়েট রেসিপিস" else "Healthy Recipes Library",
+                        text = if (isBengali) "সুভেচ্ছা এক্সপ্লোর ও ড্যাশবোর্ড" else "Subecha Exploration Center",
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = Color(0xFF5D4037)
                     )
                     Text(
                         text = if (isBengali)
-                            "আমাদের সংগৃহীত রেসিপি ভাণ্ডার আপনার সুস্থ শরীরের সহায়ক হিসেবে সতেজ ও দেশীয় উপাদানের ভিত্তিতে তৈরি।"
+                            "একই স্থানে আপনার প্রয়োজনীয় ডায়েট প্ল্যান, আশেপাশের রেস্তোরাঁ ও জরুরি এসওএস এলার্ট সেবা গ্রহণ করুন।"
                         else
-                            "Explore carefully structured traditional and biological menus conforming to low carb, low glycemic wellness principles.",
+                            "Access personalized diet plans, search healthy restaurant alternatives, trigger emergency volunteer care, and explore recipes.",
                         fontSize = 11.sp,
                         color = Color(0xFF795548),
                         lineHeight = 15.sp
                     )
                 }
             }
+        }
+
+        // --- CORE EXPLORE SERVICES GRID ---
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            Text(
+                text = if (isBengali) "প্রধান সেবা সমূহ (Explore Core Services)" else "Explore Core Services",
+                fontWeight = FontWeight.Black,
+                fontSize = 14.sp,
+                color = Color(0xFF1E5E2F),
+                modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Diet Planner Card (Navigates to standard Meals tab, which is tab indexed 1)
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                border = BorderStroke(1.dp, Color(0xFFC8E6C9)),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onNavigateToTab(1) }
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text("🥗", fontSize = 28.sp)
+                    Text(
+                        text = if (isBengali) "ডায়েট প্ল্যান" else "Diet Planner",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp,
+                        color = Color(0xFF1B5E20),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = if (isBengali) "খাবার নির্বাচন ও প্ল্যান" else "Plan healthy meal tracker",
+                        fontSize = 8.sp,
+                        color = Color(0xFF2E7D32),
+                        textAlign = TextAlign.Center,
+                        lineHeight = 10.sp
+                    )
+                }
+            }
+
+            // Search Restaurants Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (activeSubTool == "restaurant") Color(0xFFE3F2FD) else Color.White
+                ),
+                border = BorderStroke(1.dp, Color(0xFFBBDEFB)),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable {
+                        activeSubTool = if (activeSubTool == "restaurant") null else "restaurant"
+                    }
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text("📍", fontSize = 28.sp)
+                    Text(
+                        text = if (isBengali) "রেস্টুরেন্ট খুঁজুন" else "Search Restaurant",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp,
+                        color = Color(0xFF0D47A1),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = if (isBengali) "আশেপাশের সুষম খাবার" else "Trace dietary healthy shops",
+                        fontSize = 8.sp,
+                        color = Color(0xFF1565C0),
+                        textAlign = TextAlign.Center,
+                        lineHeight = 10.sp
+                    )
+                }
+            }
+
+            // SOS Alert Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (activeSubTool == "sos") Color(0xFFFFEBEE) else Color.White
+                ),
+                border = BorderStroke(1.dp, Color(0xFFFFCDD2)),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable {
+                        activeSubTool = if (activeSubTool == "sos") null else "sos"
+                    }
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text("🚨", fontSize = 28.sp)
+                    Text(
+                        text = if (isBengali) "এসওএস এলার্ট" else "SOS Distress",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp,
+                        color = Color(0xFFB71C1C),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = if (isBengali) "জরুরি সাহায্য ব্রডকাস্ট" else "Broadcast emergency signal",
+                        fontSize = 8.sp,
+                        color = Color(0xFFC62828),
+                        textAlign = TextAlign.Center,
+                        lineHeight = 10.sp
+                    )
+                }
+            }
+        }
+
+        // --- EXPANDABLE CORE SUB-TOOLS AREA ---
+        AnimatedVisibility(
+            visible = activeSubTool != null,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White)
+                    .border(1.dp, Color(0xFFECEFF1), RoundedCornerShape(16.dp))
+                    .padding(8.dp)
+            ) {
+                if (activeSubTool == "restaurant") {
+                    HealthyRestaurantFinder(
+                        viewModel = viewModel,
+                        isBengali = isBengali,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else if (activeSubTool == "sos") {
+                    VolunteerEmergencyAlert(
+                        viewModel = viewModel,
+                        isBengali = isBengali,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+
+        Divider(color = Color(0xFFECEFF1), modifier = Modifier.padding(vertical = 4.dp))
+
+        // Recipes Section Heading
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            Text(
+                text = if (isBengali) "পুষ্টিকর রেসিপি লাইব্রেরি" else "Wellness Recipe Library",
+                fontWeight = FontWeight.Black,
+                fontSize = 14.sp,
+                color = Color(0xFF1E5E2F)
+            )
         }
 
         // Horizontal Preset Category chips inside Explore
