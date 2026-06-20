@@ -1265,18 +1265,18 @@ fun ProfileEditTab(
     var customCoverUri by remember { mutableStateOf<String?>(null) }
     var customAvatarUri by remember { mutableStateOf<String?>(null) }
 
-    // Primary Setup states
-    var locationInput by remember { mutableStateOf("Dhaka, Bangladesh") }
+    // Primary Setup states collected from persistent ViewModel flows
+    val locationInput by viewModel.locationPref.collectAsState()
 
-    // Display & Personalization states
-    var selectedFontSize by remember { mutableStateOf("Medium") }
-    var keepScreenOnEnabled by remember { mutableStateOf(false) }
-    var selectedHomeDesign by remember { mutableStateOf("Sleek Modern") }
+    // Display & Personalization states collected from persistent ViewModel flows
+    val selectedFontSize by viewModel.fontSizePref.collectAsState()
+    val keepScreenOnEnabled by viewModel.keepScreenOnPref.collectAsState()
+    val selectedHomeDesign by viewModel.homeDesignPref.collectAsState()
 
-    // Notifications & Alert states
-    var notificationsEnabled by remember { mutableStateOf(true) }
-    var scheduleNotificationEnabled by remember { mutableStateOf(true) }
-    var shakeToNotifyEnabled by remember { mutableStateOf(true) }
+    // Notifications & Alert states collected from persistent ViewModel flows
+    val notificationsEnabled by viewModel.notificationsEnabledPref.collectAsState()
+    val scheduleNotificationEnabled by viewModel.oneNotificationDayPref.collectAsState()
+    val shakeToNotifyEnabled by viewModel.shakeToNotifyPref.collectAsState()
 
     // Dialog Toggle States
     var showEditProfileDialog by remember { mutableStateOf(false) }
@@ -1671,7 +1671,7 @@ fun ProfileEditTab(
 
                             OutlinedTextField(
                                 value = locationInput,
-                                onValueChange = { locationInput = it },
+                                onValueChange = { viewModel.saveLocationPref(it) },
                                 label = { Text(if (isBengali) "আপনার অবস্থান (Location)" else "City & Location", fontSize = 11.sp) },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(10.dp)
@@ -1723,7 +1723,7 @@ fun ProfileEditTab(
                                             .clip(RoundedCornerShape(8.dp))
                                             .background(if (isSel) Color(0xFFFFB74D) else Color(0xFFFAFAFA))
                                             .border(1.dp, if (isSel) Color(0xFFE65100) else Color(0xFFEEEEEE), RoundedCornerShape(8.dp))
-                                            .clickable { selectedFontSize = size }
+                                            .clickable { viewModel.saveFontSizePref(size) }
                                             .padding(vertical = 5.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -1740,7 +1740,10 @@ fun ProfileEditTab(
                                             .weight(1f)
                                             .clip(RoundedCornerShape(8.dp))
                                             .background(Color(0xFFE8F5E9))
-                                            .clickable { Toast.makeText(context, "Home card order updated!", Toast.LENGTH_SHORT).show() }
+                                            .clickable {
+                                                viewModel.saveHomeCardOrderPref(layoutText)
+                                                Toast.makeText(context, "Home card order updated!", Toast.LENGTH_SHORT).show()
+                                            }
                                             .padding(vertical = 6.dp, horizontal = 4.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -1758,7 +1761,7 @@ fun ProfileEditTab(
                                             .weight(1f)
                                             .clip(RoundedCornerShape(8.dp))
                                             .background(if (isSel) Color(0xFF1D88E5) else Color(0xFFFAFAFA))
-                                            .clickable { selectedHomeDesign = mode }
+                                            .clickable { viewModel.saveHomeDesignPref(mode) }
                                             .padding(vertical = 6.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -1775,7 +1778,7 @@ fun ProfileEditTab(
                                 Text(if (isBengali) "স্ক্রীন সচল রাখুন (Keep Screen On):" else "Keep screen active:", fontSize = 11.5.sp)
                                 Switch(
                                     checked = keepScreenOnEnabled,
-                                    onCheckedChange = { keepScreenOnEnabled = it }
+                                    onCheckedChange = { viewModel.saveKeepScreenOnPref(it) }
                                 )
                             }
                         }
@@ -1795,7 +1798,7 @@ fun ProfileEditTab(
                                 Text(if (isBengali) "সব নোটিফিকেশনস (General alerts):" else "Receive Notification Alerts:", fontSize = 11.5.sp)
                                 Switch(
                                     checked = notificationsEnabled,
-                                    onCheckedChange = { notificationsEnabled = it }
+                                    onCheckedChange = { viewModel.saveNotificationsEnabledPref(it) }
                                 )
                             }
 
@@ -1807,7 +1810,7 @@ fun ProfileEditTab(
                                 Text(if (isBengali) "দিনে একটি পুশ বার্তা (Once per day):" else "Alert Limit to One Daily:", fontSize = 11.5.sp)
                                 Switch(
                                     checked = scheduleNotificationEnabled,
-                                    onCheckedChange = { scheduleNotificationEnabled = it }
+                                    onCheckedChange = { viewModel.saveOneNotificationDayPref(it) }
                                 )
                             }
 
@@ -1819,7 +1822,7 @@ fun ProfileEditTab(
                                 Text(if (isBengali) "ঝাঁকিয়ে পুশ নোটিফিকেশন (Shake to notify):" else "Shake device to prompt log:", fontSize = 11.5.sp)
                                 Switch(
                                     checked = shakeToNotifyEnabled,
-                                    onCheckedChange = { shakeToNotifyEnabled = it }
+                                    onCheckedChange = { viewModel.saveShakeToNotifyPref(it) }
                                 )
                             }
                         }

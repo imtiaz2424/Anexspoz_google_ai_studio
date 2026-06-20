@@ -154,9 +154,98 @@ class DietPlannerViewModel(
         _recipeCheckedIngredients.value = currentMap + (recipeTitle to newSet)
     }
 
+    // Location Preference
+    private val _locationPref = MutableStateFlow("Dhaka, Bangladesh")
+    val locationPref: StateFlow<String> = _locationPref.asStateFlow()
+
+    fun saveLocationPref(value: String) {
+        _locationPref.value = value
+        val sharedPrefs = context.getSharedPreferences("suvecha_settings", Context.MODE_PRIVATE)
+        sharedPrefs.edit().putString("location_pref", value).apply()
+    }
+
+    // Font Size Preference
+    private val _fontSizePref = MutableStateFlow("Medium")
+    val fontSizePref: StateFlow<String> = _fontSizePref.asStateFlow()
+
+    fun saveFontSizePref(value: String) {
+        _fontSizePref.value = value
+        val sharedPrefs = context.getSharedPreferences("suvecha_settings", Context.MODE_PRIVATE)
+        sharedPrefs.edit().putString("font_size_pref", value).apply()
+    }
+
+    // Keep Screen On Preference
+    private val _keepScreenOnPref = MutableStateFlow(false)
+    val keepScreenOnPref: StateFlow<Boolean> = _keepScreenOnPref.asStateFlow()
+
+    fun saveKeepScreenOnPref(value: Boolean) {
+        _keepScreenOnPref.value = value
+        val sharedPrefs = context.getSharedPreferences("suvecha_settings", Context.MODE_PRIVATE)
+        sharedPrefs.edit().putBoolean("keep_screen_on_pref", value).apply()
+    }
+
+    // Home Design Preference
+    private val _homeDesignPref = MutableStateFlow("Sleek Modern")
+    val homeDesignPref: StateFlow<String> = _homeDesignPref.asStateFlow()
+
+    fun saveHomeDesignPref(value: String) {
+        _homeDesignPref.value = value
+        val sharedPrefs = context.getSharedPreferences("suvecha_settings", Context.MODE_PRIVATE)
+        sharedPrefs.edit().putString("home_design_pref", value).apply()
+    }
+
+    // Notifications Enabled Preference
+    private val _notificationsEnabledPref = MutableStateFlow(true)
+    val notificationsEnabledPref: StateFlow<Boolean> = _notificationsEnabledPref.asStateFlow()
+
+    fun saveNotificationsEnabledPref(value: Boolean) {
+        _notificationsEnabledPref.value = value
+        val sharedPrefs = context.getSharedPreferences("suvecha_settings", Context.MODE_PRIVATE)
+        sharedPrefs.edit().putBoolean("notifications_enabled_pref", value).apply()
+    }
+
+    // One Notification Per Day Preference
+    private val _oneNotificationDayPref = MutableStateFlow(true)
+    val oneNotificationDayPref: StateFlow<Boolean> = _oneNotificationDayPref.asStateFlow()
+
+    fun saveOneNotificationDayPref(value: Boolean) {
+        _oneNotificationDayPref.value = value
+        val sharedPrefs = context.getSharedPreferences("suvecha_settings", Context.MODE_PRIVATE)
+        sharedPrefs.edit().putBoolean("one_notification_day_pref", value).apply()
+    }
+
+    // Shake to Notify Preference
+    private val _shakeToNotifyPref = MutableStateFlow(true)
+    val shakeToNotifyPref: StateFlow<Boolean> = _shakeToNotifyPref.asStateFlow()
+
+    fun saveShakeToNotifyPref(value: Boolean) {
+        _shakeToNotifyPref.value = value
+        val sharedPrefs = context.getSharedPreferences("suvecha_settings", Context.MODE_PRIVATE)
+        sharedPrefs.edit().putBoolean("shake_to_notify_pref", value).apply()
+    }
+
+    // Home Card Order Preference
+    private val _homeCardOrderPref = MutableStateFlow("Caloric first")
+    val homeCardOrderPref: StateFlow<String> = _homeCardOrderPref.asStateFlow()
+
+    fun saveHomeCardOrderPref(value: String) {
+        _homeCardOrderPref.value = value
+        val sharedPrefs = context.getSharedPreferences("suvecha_settings", Context.MODE_PRIVATE)
+        sharedPrefs.edit().putString("home_card_order_pref", value).apply()
+    }
+
     init {
         val sharedPrefs = context.getSharedPreferences("suvecha_settings", Context.MODE_PRIVATE)
         _isBengali.value = sharedPrefs.getBoolean("is_bengali", false)
+        _locationPref.value = sharedPrefs.getString("location_pref", "Dhaka, Bangladesh") ?: "Dhaka, Bangladesh"
+        _fontSizePref.value = sharedPrefs.getString("font_size_pref", "Medium") ?: "Medium"
+        _keepScreenOnPref.value = sharedPrefs.getBoolean("keep_screen_on_pref", false)
+        _homeDesignPref.value = sharedPrefs.getString("home_design_pref", "Sleek Modern") ?: "Sleek Modern"
+        _notificationsEnabledPref.value = sharedPrefs.getBoolean("notifications_enabled_pref", true)
+        _oneNotificationDayPref.value = sharedPrefs.getBoolean("one_notification_day_pref", true)
+        _shakeToNotifyPref.value = sharedPrefs.getBoolean("shake_to_notify_pref", true)
+        _homeCardOrderPref.value = sharedPrefs.getString("home_card_order_pref", "Caloric first") ?: "Caloric first"
+
         viewModelScope.launch {
             repository.preloadDefaultRemindersIfEmpty()
             repository.preloadDefaultRecipesIfEmpty()

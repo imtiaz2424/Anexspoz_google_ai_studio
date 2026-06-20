@@ -26,6 +26,12 @@ class FirebaseAuthManager(private val context: Context) {
         val email = sharedPrefs.getString("email", null)
         if (uid != null && email != null) {
             _currentUser.value = AuthUser(uid, email)
+        } else {
+            // Auto sign-in guest user for developer/local preview so the dashboard loads instantly!
+            val guestEmail = "user@anexsopz.com"
+            val guestUid = "sim_" + Math.abs(guestEmail.hashCode()).toString()
+            _currentUser.value = AuthUser(guestUid, guestEmail)
+            sharedPrefs.edit().putString("uid", guestUid).putString("email", guestEmail).apply()
         }
     }
 

@@ -69,14 +69,19 @@ fun ToolsTab(
 
     var activeSection by rememberSaveable { mutableStateOf("diet") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
     ) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = 650.dp)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         // Welcome and App Identity Banner
         Card(
             shape = RoundedCornerShape(20.dp),
@@ -166,6 +171,143 @@ fun ToolsTab(
                         fontSize = 11.sp,
                         color = Color(0xFF5D4037)
                     )
+                }
+            }
+        }
+
+        // --- PERSISTENT SEAMLESS QUICK SETTINGS & EMERGENCY MAP QUICK-LINK ---
+        val locationPrefVal by viewModel.locationPref.collectAsState()
+        Card(
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.2.dp, MaterialTheme.colorScheme.outlineVariant),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (isBengali) "⚙️ কুইক সেটিং ও কাস্টম প্রেফারেন্স" else "⚙️ Instant Preferences & Safety Links",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.5.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = if (isBengali) "অটো সেভ" else "Auto-Save Enabled",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 8.5.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                // Row of Switch and Quick Toggles
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Language Switch Button
+                    Button(
+                        onClick = { viewModel.toggleLanguage() },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f).height(36.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp)
+                    ) {
+                        Text(if (isBengali) "🇺🇸 Language: EN" else "🇧🇩 ভাষা: বাংলা", fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    // Theme Mode Toggle Button
+                    Button(
+                        onClick = { viewModel.toggleTheme(context) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f).height(36.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = if (isDarkTheme) {
+                                if (isBengali) "☀️ লাইট মোড" else "☀️ Light Mode"
+                            } else {
+                                if (isBengali) "🌙 ডার্ক মোড" else "🌙 Dark Mode"
+                            },
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), thickness = 0.8.dp)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("📍", fontSize = 14.sp)
+                        Column {
+                            Text(
+                                text = if (isBengali) "আমার ডিফেন্ডার জোন" else "My GPS Defender Zone",
+                                fontSize = 9.5.sp,
+                                color = Color.Gray,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = locationPrefVal,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+
+                    // Direct shortcut trigger to expand Nearby Helper Map instantly!
+                    Button(
+                        onClick = { activeSection = "volunteer" },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp).testTag("direct_helper_map_btn")
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("🗺️", fontSize = 11.sp)
+                            Text(
+                                text = if (isBengali) "নিকটস্থ ম্যাপ দেখুন" else "Show Helper Map",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 10.sp,
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -436,12 +578,12 @@ fun ToolsTab(
             }
         }
 
-        // --- DASHBOARD INTERACTIVE GRID SYSTEM ---
+        // --- DASHBOARD INTERACTIVE GRID SYSTEM (CORE WELLNESS HUB) ---
         Text(
-            text = if (isBengali) "প্রধান স্বাস্থ্য ও নিরাপত্তা ড্যাশবোর্ড" else "Primary Health & Safety Core",
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 14.sp,
-            color = Color(0xFF37474F),
+            text = if (isBengali) "🎯 প্রধান সুস্থতা ও ডায়েট হাব" else "🎯 Core Wellness & Dining Hub",
+            fontWeight = FontWeight.Black,
+            fontSize = 15.sp,
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .align(Alignment.Start)
                 .padding(top = 4.dp, bottom = 2.dp)
@@ -490,6 +632,30 @@ fun ToolsTab(
             )
         }
 
+        // Card 4: Restaurant Finder - Placed prominently in the primary hub spanning full width!
+        DashboardGridCard(
+            title = if (isBengali) "রেস্টুরেন্ট ও স্বাস্থ্যকর খাবার হোটেল" else "Healthy Eats & Restaurant Finder",
+            subtitle = if (isBengali) "সহজে আপনার কাছাকাছি পুষ্টিকর খাবার হোটেল সনাক্ত করুন" else "Locate nutritious food centers & healthy dining nearby",
+            icon = Icons.Default.Storefront,
+            isActive = activeSection == "dining",
+            badge = if (isBengali) "খাদ্য সন্ধান" else "Dining Explorer",
+            colorScheme = Color(0xFFE65100),
+            backgroundColor = Color(0xFFFFF3E0),
+            modifier = Modifier.fillMaxWidth().testTag("grid_card_dining"),
+            onClick = { activeSection = "dining" }
+        )
+
+        // --- SECONDARY HEALTH, EMERGENCY & SUPPORT UTILITIES ---
+        Text(
+            text = if (isBengali) "🛡️ নিরাপত্তা, এলার্ট ও অন্যান্য ইউটিলিটি" else "🛡️ Safety, Alarms & Support Utilities",
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.5.sp,
+            color = Color(0xFF78909C),
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(top = 8.dp, bottom = 2.dp)
+        )
+
         // Card 3: Volunteer Emergency (SOS) - Spans full width for prominent safety priority!
         val rescueBadge = if (isBengali) "জরুরি সাহায্য ও রক্ত" else "Emergency SOS"
         val rescueSubtitle = if (isBengali) {
@@ -509,34 +675,10 @@ fun ToolsTab(
             onClick = { activeSection = "volunteer" }
         )
 
-        // --- SECONDARY UTILITIES GRID ---
-        Text(
-            text = if (isBengali) "অন্যান্য স্বাস্থ্য ইউটিলিটি" else "Additional Wellness Utilities",
-            fontWeight = FontWeight.Bold,
-            fontSize = 12.sp,
-            color = Color(0xFF78909C),
-            modifier = Modifier
-                .align(Alignment.Start)
-                .padding(top = 4.dp, bottom = 2.dp)
-        )
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Card 4: Restaurant Finder
-            DashboardGridCard(
-                title = if (isBengali) "রেস্টুরেন্ট" else "Healthy Eats",
-                subtitle = if (isBengali) "পুষ্টিকর খাবার হোটেল" else "Healthy Dining",
-                icon = Icons.Default.Storefront,
-                isActive = activeSection == "dining",
-                badge = if (isBengali) "খাদ্য সন্ধান" else "Dining",
-                colorScheme = Color(0xFFE65100),
-                backgroundColor = Color(0xFFFFF3E0),
-                modifier = Modifier.weight(1f).testTag("grid_card_dining"),
-                onClick = { activeSection = "dining" }
-            )
-
             // Card 5: Reminders
             DashboardGridCard(
                 title = if (isBengali) "রিমাইন্ডার ও অনুস্মারক" else "Meal & Water Reminders",
@@ -549,12 +691,7 @@ fun ToolsTab(
                 modifier = Modifier.weight(1f).testTag("grid_card_reminders"),
                 onClick = { activeSection = "reminders" }
             )
-        }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
             // Card 6: Daily Goal Tracker
             DashboardGridCard(
                 title = if (isBengali) "দৈনিক লক্ষ্য" else "Wellness Goals",
@@ -567,7 +704,12 @@ fun ToolsTab(
                 modifier = Modifier.weight(1f).testTag("grid_card_goals"),
                 onClick = { activeSection = "goals" }
             )
+        }
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             // Card 7: Clinical Nutrition Calculator
             DashboardGridCard(
                 title = if (isBengali) "পুষ্টি ক্যালকুলেটর" else "Nutrition Calculator",
@@ -580,12 +722,7 @@ fun ToolsTab(
                 modifier = Modifier.weight(1f).testTag("grid_card_calculator"),
                 onClick = { activeSection = "calculator" }
             )
-        }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
             // Card 8: Local SOS Safety Directory
             DashboardGridCard(
                 title = if (isBengali) "জরুরি সাহায্য ও নম্বর" else "Local SOS Safety Directory",
@@ -598,7 +735,12 @@ fun ToolsTab(
                 modifier = Modifier.weight(1f).testTag("grid_card_sos_contacts"),
                 onClick = { activeSection = "sos_contacts" }
             )
+        }
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             // Card 9: Dark Mode Toggle Card
             DashboardGridCard(
                 title = if (isBengali) "ডার্ক থিম পরিবর্তন" else "Dark Theme Mode",
@@ -611,12 +753,7 @@ fun ToolsTab(
                 modifier = Modifier.weight(1f).testTag("grid_card_dark_mode_toggle"),
                 onClick = { viewModel.toggleTheme(context) }
             )
-        }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
             // Card 10: Interactive Hydration Tracker
             DashboardGridCard(
                 title = if (isBengali) "হাইড্রেশন ট্র্যাকার" else "Hydration Tracker",
@@ -629,7 +766,12 @@ fun ToolsTab(
                 modifier = Modifier.weight(1f).testTag("grid_card_hydration"),
                 onClick = { activeSection = "hydration" }
             )
+        }
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             // Card 11: Cloud Backup & Offline Sync
             DashboardGridCard(
                 title = if (isBengali) "ডাটা সিঙ্ক ও অফলাইন" else "Data Offline Sync",
@@ -642,12 +784,7 @@ fun ToolsTab(
                 modifier = Modifier.weight(1f).testTag("grid_card_offline_sync"),
                 onClick = { activeSection = "offline_sync" }
             )
-        }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
             // Card 12: Mindfulness Space
             DashboardGridCard(
                 title = if (isBengali) "মাইন্ডফুলনেস সেন্টার" else "Mindfulness Space",
@@ -660,7 +797,12 @@ fun ToolsTab(
                 modifier = Modifier.weight(1f).testTag("grid_card_mindfulness"),
                 onClick = { activeSection = "mindfulness" }
             )
+        }
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             // Card 13: Workout Logger
             DashboardGridCard(
                 title = if (isBengali) "সুস্বাস্থ্য ওয়ার্কআউট" else "Workout Logger",
@@ -672,6 +814,30 @@ fun ToolsTab(
                 backgroundColor = Color(0xFFFFF3E0),
                 modifier = Modifier.weight(1f).testTag("grid_card_workout"),
                 onClick = { activeSection = "workout" }
+            )
+
+            // Card 14: User preferences persistence status (Completes symmetry nicely)
+            val prefSub = if (isBengali) "ভাষা: ${if (isBengali) "বাংলা" else "EN"} | থিম: ${if (isDarkTheme) "ডার্ক" else "লাইট"}" else "Lang: ${if (isBengali) "বাংলা" else "EN"} | Theme: ${if (isDarkTheme) "Dark" else "Light"}"
+            DashboardGridCard(
+                title = if (isBengali) "ব্যবহারকারী প্রেফারেন্স" else "User Preferences",
+                subtitle = prefSub,
+                icon = Icons.Default.Settings,
+                isActive = false,
+                badge = if (isBengali) "সংরক্ষিত" else "Saved",
+                colorScheme = Color(0xFF607D8B),
+                backgroundColor = Color(0xFFECEFF1),
+                modifier = Modifier.weight(1f).testTag("grid_card_user_prefs"),
+                onClick = {
+                    val msgEn = "Dynamic user configurations saved instantly in local storage 💾"
+                    val msgBn = "ব্যবহারকারীর ডাইনামিক প্রেফারেন্স অফলাইনে নিরাপদে সংরক্ষিত হয়েছে 💾"
+                    viewModel.showInteractiveToast(
+                        messageEn = msgEn,
+                        messageBn = msgBn,
+                        actionEn = "OK",
+                        actionBn = "ঠিক আছে",
+                        onAction = {}
+                    )
+                }
             )
         }
 
@@ -1235,6 +1401,7 @@ fun ToolsTab(
             )
         }
     }
+}
 }
 
 // =========================================================================
