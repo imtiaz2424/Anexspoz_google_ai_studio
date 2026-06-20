@@ -1,5 +1,8 @@
 package com.example.ui
 
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+
 import android.app.DatePickerDialog
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
@@ -1249,11 +1252,18 @@ fun ProfileEditTab(
     val coverBrushes = listOf(
         Brush.linearGradient(colors = listOf(Color(0xFF81C784), Color(0xFF1E5E2F))),
         Brush.linearGradient(colors = listOf(Color(0xFFFFB74D), Color(0xFFE65100))),
-        Brush.linearGradient(colors = listOf(Color(0xFF64B5F6), Color(0xFF0D47A1)))
+        Brush.linearGradient(colors = listOf(Color(0xFF64B5F6), Color(0xFF0D47A1))),
+        Brush.linearGradient(colors = listOf(Color(0xFFBA68C8), Color(0xFF4A148C))),
+        Brush.linearGradient(colors = listOf(Color(0xFFE57373), Color(0xFF880E4F)))
     )
 
     var avatarIndex by remember { mutableStateOf(0) }
-    val avatarEmojis = listOf("💪", "🏃‍♀️", "🧘", "🏆")
+    val avatarEmojis = listOf("💪", "🏃‍♀️", "🧘", "🏆", "🌟", "🥗", "🍇")
+
+    var showCoverUploadDialog by remember { mutableStateOf(false) }
+    var showAvatarUploadDialog by remember { mutableStateOf(false) }
+    var customCoverUri by remember { mutableStateOf<String?>(null) }
+    var customAvatarUri by remember { mutableStateOf<String?>(null) }
 
     // Primary Setup states
     var locationInput by remember { mutableStateOf("Dhaka, Bangladesh") }
@@ -1299,22 +1309,46 @@ fun ProfileEditTab(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(130.dp)
-                    .background(coverBrushes[coverStyleIndex])
+                    .background(
+                        if (customCoverUri != null) {
+                            // Render custom uploaded cover gradient
+                            Brush.linearGradient(colors = listOf(Color(0xFF263238), Color(0xFF37474F)))
+                        } else {
+                            coverBrushes[coverStyleIndex]
+                        }
+                    )
             ) {
+                // Background visual overlay if simulated cover loaded
+                if (customCoverUri != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.25f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (isBengali) "🖼️ কাস্টম কাভার ছবি লোড হয়েছে" else "🖼️ Custom Cover Selected",
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
                 Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(10.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color.Black.copy(alpha = 0.4f))
-                        .clickable { coverStyleIndex = (coverStyleIndex + 1) % coverBrushes.size }
+                        .background(Color.Black.copy(alpha = 0.45f))
+                        .clickable { showCoverUploadDialog = true }
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Icon(Icons.Default.Edit, contentDescription = "Edit Cover", tint = Color.White, modifier = Modifier.size(11.dp))
                     Text(
-                        text = if (isBengali) "কভার পরিবর্তন" else "Change Cover",
+                        text = if (isBengali) "কভার আপলোড" else "Upload Cover",
                         color = Color.White,
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold
@@ -1338,10 +1372,25 @@ fun ProfileEditTab(
                         .fillMaxSize()
                         .clip(CircleShape)
                         .background(Color(0xFFE8F5E9))
-                        .clickable { avatarIndex = (avatarIndex + 1) % avatarEmojis.size },
+                        .clickable { showAvatarUploadDialog = true },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(avatarEmojis[avatarIndex], fontSize = 44.sp)
+                    if (customAvatarUri != null) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text("👤", fontSize = 34.sp)
+                            Text(
+                                text = if (isBengali) "আপলোডেড" else "CUSTOM",
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E5E2F)
+                            )
+                        }
+                    } else {
+                        Text(avatarEmojis[avatarIndex], fontSize = 44.sp)
+                    }
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
@@ -1888,6 +1937,264 @@ fun ProfileEditTab(
             confirmButton = {
                 Button(onClick = { showAboutUsDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5E2F))) {
                     Text("OK")
+                }
+            }
+        )
+    }
+
+    if (showCoverUploadDialog) {
+        var isUploading by remember { mutableStateOf(false) }
+        var uploadPercent by remember { mutableStateOf(0f) }
+        val scope = rememberCoroutineScope()
+
+        AlertDialog(
+            onDismissRequest = { if (!isUploading) showCoverUploadDialog = false },
+            title = {
+                Text(
+                    text = if (isBengali) "কভার ফটো নির্বাচন ও আপলোড" else "Cover Photo Customizer",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = Color(0xFF1E5E2F)
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isUploading) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                progress = { uploadPercent },
+                                color = Color(0xFF1E5E2F),
+                                modifier = Modifier.size(50.dp)
+                            )
+                            Text(
+                                text = if (isBengali) "কভার ফাইল আপলোড হচ্ছে: ${(uploadPercent * 100).toInt()}%" else "Uploading cover file: ${(uploadPercent * 100).toInt()}%",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Gray
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = if (isBengali) "একটি অপশন বেছে নিন (১০০% নিরাপদ সিঙ্ক):" else "Choose a customization option (Secure local stream):",
+                            fontSize = 11.5.sp,
+                            modifier = Modifier.align(Alignment.Start)
+                        )
+
+                        // Option A: Preset theme styles
+                        Text(
+                            text = if (isBengali) "রঙিন থিম কভার সেট করুন:" else "Select Preset theme color:",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            color = Color.DarkGray,
+                            modifier = Modifier.align(Alignment.Start)
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            coverBrushes.forEachIndexed { idx, brush ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(brush)
+                                        .border(
+                                            width = if (coverStyleIndex == idx && customCoverUri == null) 2.dp else 0.dp,
+                                            color = Color.Black,
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .clickable {
+                                            customCoverUri = null
+                                            coverStyleIndex = idx
+                                            showCoverUploadDialog = false
+                                            Toast.makeText(context, if (isBengali) "কভার থিম আপডেট হয়েছে!" else "Updated cover background!", Toast.LENGTH_SHORT).show()
+                                        }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Divider(color = Color(0xFFEEEEEE))
+
+                        // Option B: Simulated gallery upload
+                        Button(
+                            onClick = {
+                                isUploading = true
+                                uploadPercent = 0f
+                                scope.launch {
+                                    while (uploadPercent < 1.0f) {
+                                        delay(150)
+                                        uploadPercent += 0.1f
+                                    }
+                                    customCoverUri = "gallery_cover_simulated"
+                                    isUploading = false
+                                    showCoverUploadDialog = false
+                                    Toast.makeText(context, if (isBengali) "ডিভাইস থেকে কভার আপলোড সফল!" else "Cover uploaded successfully from gallery!", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5E2F)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Photo, contentDescription = "Gallery", modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(if (isBengali) "গ্যালারি থেকে ফটো বাছুন" else "Simulate Gallery Photo Upload", fontSize = 11.5.sp)
+                        }
+
+                        // Reset Custom Cover
+                        if (customCoverUri != null) {
+                            TextButton(
+                                onClick = {
+                                    customCoverUri = null
+                                    showCoverUploadDialog = false
+                                }
+                            ) {
+                                Text(if (isBengali) "রিসেট করুন কভার" else "Reset to default colors", color = Color.Red, fontSize = 11.sp)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                if (!isUploading) {
+                    TextButton(onClick = { showCoverUploadDialog = false }) {
+                        Text(if (isBengali) "বন্ধ করুন" else "Close")
+                    }
+                }
+            }
+        )
+    }
+
+    if (showAvatarUploadDialog) {
+        var isUploading by remember { mutableStateOf(false) }
+        var uploadPercent by remember { mutableStateOf(0f) }
+        val scope = rememberCoroutineScope()
+
+        AlertDialog(
+            onDismissRequest = { if (!isUploading) showAvatarUploadDialog = false },
+            title = {
+                Text(
+                    text = if (isBengali) "প্রোফাইল ছবি ও কাস্টমাইজার" else "Profile Photo Customizer",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = Color(0xFF1E5E2F)
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isUploading) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                progress = { uploadPercent },
+                                color = Color(0xFF1E5E2F),
+                                modifier = Modifier.size(50.dp)
+                            )
+                            Text(
+                                text = if (isBengali) "ছবি আপলোড হচ্ছে... ${(uploadPercent * 100).toInt()}%" else "Uploading profile photo... ${(uploadPercent * 100).toInt()}%",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Gray
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = if (isBengali) "১. প্রিসেট প্রোফাইল ইমোজি বাছুন:" else "1. Choose a biological emoji avatar:",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            color = Color.DarkGray,
+                            modifier = Modifier.align(Alignment.Start)
+                        )
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            avatarEmojis.forEachIndexed { idx, emoji ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(if (avatarIndex == idx && customAvatarUri == null) Color(0xFFC8E6C9) else Color(0xFFF5F5F5))
+                                        .clickable {
+                                            customAvatarUri = null
+                                            avatarIndex = idx
+                                            showAvatarUploadDialog = false
+                                            Toast.makeText(context, if (isBengali) "প্রোফাইল অবতার হালনাগাদ সফল!" else "Avatar updated!", Toast.LENGTH_SHORT).show()
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(emoji, fontSize = 18.sp)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Divider(color = Color(0xFFEEEEEE))
+
+                        Text(
+                            text = if (isBengali) "২. কাস্টম প্রোফাইল ফাইল আপলোড করুন:" else "2. Upload high fidelity custom photo:",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            color = Color.DarkGray,
+                            modifier = Modifier.align(Alignment.Start)
+                        )
+
+                        Button(
+                            onClick = {
+                                isUploading = true
+                                uploadPercent = 0f
+                                scope.launch {
+                                    while (uploadPercent < 1.0f) {
+                                        delay(150)
+                                        uploadPercent += 0.1f
+                                    }
+                                    customAvatarUri = "gallery_avatar_simulated"
+                                    isUploading = false
+                                    showAvatarUploadDialog = false
+                                    Toast.makeText(context, if (isBengali) "প্রোফাইল ফটো আপলোড সফল!" else "Profile photo simulated upload complete!", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5E2F)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.PhotoCamera, contentDescription = "Camera Picker", modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(if (isBengali) "ডিভাইস ক্যামেরা/গ্যালারি হতে আপলোড" else "Simulate Camera/Gallery Upload", fontSize = 11.5.sp)
+                        }
+
+                        if (customAvatarUri != null) {
+                            TextButton(
+                                onClick = {
+                                    customAvatarUri = null
+                                    showAvatarUploadDialog = false
+                                }
+                            ) {
+                                Text(if (isBengali) "ইমোজি অবলুপ্ত রিসেট" else "Reset to emoji presets", color = Color.Red, fontSize = 11.sp)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                if (!isUploading) {
+                    TextButton(onClick = { showAvatarUploadDialog = false }) {
+                        Text(if (isBengali) "বন্ধ করুন" else "Close")
+                    }
                 }
             }
         )

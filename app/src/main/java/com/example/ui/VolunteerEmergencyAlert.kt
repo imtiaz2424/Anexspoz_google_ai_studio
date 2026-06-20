@@ -1,5 +1,11 @@
 package com.example.ui
 
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -356,6 +362,16 @@ fun VolunteerEmergencyAlert(
                     }
                 }
 
+                // Local Volunteer Locator Standby Map
+                LocalVolunteerMap(
+                    isSOSActive = false,
+                    activeResponders = emptyList(),
+                    isBengali = isBengali,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
                 // Interactive Broadcast SOS Launch Point
                 Button(
                     onClick = {
@@ -510,6 +526,14 @@ fun VolunteerEmergencyAlert(
                                 )
                             }
                         }
+
+                        // Local Volunteer Tracking Map (ACTIVE SOS RADAR)
+                        LocalVolunteerMap(
+                            isSOSActive = true,
+                            activeResponders = activeVolunteersList,
+                            isBengali = isBengali,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
 
                         Spacer(modifier = Modifier.height(4.dp))
 
@@ -770,6 +794,331 @@ private suspend fun detectCurrentLocationReverseGeocode(
         } catch (e: SecurityException) {
             withContext(Dispatchers.Main) {
                 onFailure(e.localizedMessage ?: "GPS sensor security validation failed.")
+            }
+        }
+    }
+}
+
+@Composable
+private fun LocalVolunteerMap(
+    isSOSActive: Boolean,
+    activeResponders: List<SimulatedVolunteer>,
+    isBengali: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    var selectedVolunteerName by remember { mutableStateOf<String?>(null) }
+    var selectedVolunteerPhone by remember { mutableStateOf<String?>(null) }
+    var selectedVolunteerSkill by remember { mutableStateOf<String?>(null) }
+    var selectedVolunteerDistance by remember { mutableStateOf<String?>(null) }
+
+    // Radar animations
+    val infiniteTransition = rememberInfiniteTransition(label = "RadarSweep")
+    val radarAngle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 3500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "angle"
+    )
+
+    val signalRadius by infiniteTransition.animateFloat(
+        initialValue = 10f,
+        targetValue = 140f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2000, easing = EaseOutQuad),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "signal"
+    )
+
+    val ringColor = if (isSOSActive) Color(0xFFE53935).copy(alpha = 0.3f) else Color(0xFF43A047).copy(alpha = 0.3f)
+    val sweepColor = if (isSOSActive) Color(0xFFEF5350).copy(alpha = 0.15f) else Color(0xFF81C784).copy(alpha = 0.15f)
+    val userBeaconColor = if (isSOSActive) Color(0xFFD32F2F) else Color(0xFF2E7D32)
+
+    val pins = remember(isBengali) {
+        listOf(
+            Triple("Arif", Offset(-70f, -60f), "🛡️   Arif Rahman"),
+            Triple("Tania", Offset(80f, -40f), "🩺   Dr. Tania Ahmed"),
+            Triple("Hasan", Offset(-40f, 90f), "🚗   Hasan Ali")
+        )
+    }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = if (isSOSActive) Color(0xFFFFEBEE) else Color(0xFFFAFAFA)),
+        border = BorderStroke(1.2.dp, if (isSOSActive) Color(0xFFD32F2F) else Color(0xFFE8F5E9)),
+        shape = RoundedCornerShape(16.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(260.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxSize().padding(10.dp)) {
+            // Header Info Bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (isSOSActive) {
+                        if (isBengali) "🛡️ লাইভ ডিফেন্ডার মানচিত্র (SOS সচল)" else "🛡️ Live Emergency Locator Active"
+                    } else {
+                        if (isBengali) "📍 আপনার আশেপাশের স্বেচ্ছাসেবক ম্যাপ" else "📍 Dynamic Local Standby Map"
+                    },
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = if (isSOSActive) Color(0xFFC62828) else Color(0xFF1B5E20)
+                )
+
+                // Led Indicator
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(if (isSOSActive) Color.Red else Color.Green)
+                    )
+                    Text(
+                        text = if (isSOSActive) (if (isBengali) "জরুরি সংকেত" else "SOS Pulse") else (if (isBengali) "নিরাপদ জোন" else "Safe Scanner"),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Gray
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Map Area Box
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .border(0.5.dp, Color.LightGray.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                    .background(if (isSOSActive) Color(0xFFFFF9F9) else Color(0xFFF7FDF7))
+            ) {
+                // Drawing Canvas radar behind
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val w = size.width
+                    val h = size.height
+                    val cx = w / 2
+                    val cy = h / 2
+
+                    // Draw rings
+                    drawCircle(color = ringColor, radius = 50f, center = Offset(cx, cy), style = Stroke(1.5f))
+                    drawCircle(color = ringColor, radius = 110f, center = Offset(cx, cy), style = Stroke(1.5f))
+                    drawCircle(color = ringColor, radius = 170f, center = Offset(cx, cy), style = Stroke(1.5f))
+
+                    // Draw Crosshairs
+                    drawLine(color = ringColor.copy(alpha = 0.2f), start = Offset(cx, 0f), end = Offset(cx, h), strokeWidth = 1f)
+                    drawLine(color = ringColor.copy(alpha = 0.2f), start = Offset(0f, cy), end = Offset(w, cy), strokeWidth = 1f)
+
+                    // Draw rotating sweep arc
+                    drawArc(
+                        color = sweepColor,
+                        startAngle = radarAngle,
+                        sweepAngle = 40f,
+                        useCenter = true,
+                        size = androidx.compose.ui.geometry.Size(420f, 420f),
+                        topLeft = Offset(cx - 210f, cy - 210f)
+                    )
+
+                    // Draw Pulsing signal ripples
+                    drawCircle(
+                        color = ringColor.copy(alpha = (1f - (signalRadius / 140f)).coerceIn(0f, 0.4f)),
+                        radius = signalRadius * 1.5f,
+                        center = Offset(cx, cy),
+                        style = Stroke(2f)
+                    )
+
+                    // Convergence Route Track Lines if broadcast is active
+                    activeResponders.forEach { responder ->
+                        val targetOffset = when (responder.id) {
+                            "vol_1" -> Offset(-70f, -60f)
+                            "vol_2" -> Offset(80f, -40f)
+                            "vol_3" -> Offset(-40f, 90f)
+                            else -> null
+                        }
+                        if (targetOffset != null) {
+                            // Draw vector lines from responder to user center
+                            drawLine(
+                                color = Color(0xFFD32F2F),
+                                start = Offset(cx + targetOffset.x, cy + targetOffset.y),
+                                end = Offset(cx, cy),
+                                strokeWidth = 3f,
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f)
+                            )
+                        }
+                    }
+                }
+
+                // Center node representing the User
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(userBeaconColor.copy(alpha = 0.25f))
+                        .border(1.5.dp, userBeaconColor, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(userBeaconColor)
+                    )
+                }
+
+                // Floating Pin Nodes Overlay
+                pins.forEach { (id, offset, label) ->
+                    val isResponderActive = activeResponders.any {
+                        (id == "Arif" && it.id == "vol_1") ||
+                        (id == "Tania" && it.id == "vol_2") ||
+                        (id == "Hasan" && it.id == "vol_3")
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .offset(x = offset.x.dp, y = offset.y.dp)
+                            .clickable {
+                                when (id) {
+                                    "Arif" -> {
+                                        selectedVolunteerName = if (isBengali) "আরিফ রহমান" else "Arif Rahman"
+                                        selectedVolunteerPhone = "+8801711122233"
+                                        selectedVolunteerSkill = if (isBengali) "সিপিআর, ফার্স্ট এইড" else "First Aid CPR Expert"
+                                        selectedVolunteerDistance = "0.3 km"
+                                    }
+                                    "Tania" -> {
+                                        selectedVolunteerName = if (isBengali) "ডাঃ তানিয়া আহমেদ" else "Dr. Tania Ahmed"
+                                        selectedVolunteerPhone = "+8801822233344"
+                                        selectedVolunteerSkill = if (isBengali) "মেডিকেল অফিসার, মানসিক কাউন্সেলিং" else "Emergency Medical Officer"
+                                        selectedVolunteerDistance = "0.7 km"
+                                    }
+                                    "Hasan" -> {
+                                        selectedVolunteerName = if (isBengali) "হাসান আলী" else "Hasan Ali"
+                                        selectedVolunteerPhone = "+8801933344455"
+                                        selectedVolunteerSkill = if (isBengali) "জরুরি গাড়িচালক, রক্তদান" else "Fast Response Driver"
+                                        selectedVolunteerDistance = "1.5 km"
+                                    }
+                                }
+                                Toast
+                                    .makeText(
+                                        context,
+                                        "Selected Defender: $selectedVolunteerName ($selectedVolunteerDistance)",
+                                        Toast.LENGTH_SHORT
+                                    )
+                                    .show()
+                            }
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(1.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(if (isResponderActive) Color(0xFFD32F2F) else Color.White)
+                                    .border(
+                                        width = 1.5.dp,
+                                        color = if (isResponderActive) Color.White else Color(0xFF1E5E2F),
+                                        shape = CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = when (id) {
+                                        "Arif" -> "🛡️"
+                                        "Tania" -> "🩺"
+                                        else -> "🚗"
+                                    },
+                                    fontSize = 13.sp
+                                )
+                            }
+                            // Name label
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isResponderActive) Color(0xFFD32F2F) else Color.White.copy(alpha = 0.85f)
+                                ),
+                                shape = RoundedCornerShape(4.dp),
+                                modifier = Modifier.padding(1.dp)
+                            ) {
+                                Text(
+                                    text = if (id == "Arif") {
+                                        if (isBengali) "আরিফ" else "Arif"
+                                    } else if (id == "Tania") {
+                                        if (isBengali) "তানিয়া" else "Dr. Tania"
+                                    } else {
+                                        if (isBengali) "হাসান" else "Hasan"
+                                    },
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isResponderActive) Color.White else Color.Black,
+                                    modifier = Modifier.padding(horizontal = 3.dp, vertical = 0.5.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Inline popup banner detailing selected standby volunteer if clicked
+                if (selectedVolunteerName != null) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .background(Color.White.copy(alpha = 0.95f))
+                            .border(width = 0.5.dp, color = Color.LightGray)
+                            .padding(6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = selectedVolunteerName ?: "",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1E5E2F)
+                                )
+                                Text(
+                                    text = "${selectedVolunteerSkill ?: ""} • 📍 ${selectedVolunteerDistance ?: ""}",
+                                    fontSize = 9.sp,
+                                    color = Color.DarkGray
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Button(
+                                    onClick = {
+                                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${selectedVolunteerPhone}"))
+                                        context.startActivity(intent)
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    modifier = Modifier.height(24.dp)
+                                ) {
+                                    Text(if (isBengali) "কল" else "Call", fontSize = 9.sp)
+                                }
+                                IconButton(
+                                    onClick = { selectedVolunteerName = null },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(12.dp))
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
