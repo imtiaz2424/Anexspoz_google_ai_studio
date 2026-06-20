@@ -1229,9 +1229,11 @@ fun ProgressTrackerTab(
 fun ProfileEditTab(
     userProfile: UserProfileEntity,
     isBengali: Boolean,
+    viewModel: DietPlannerViewModel,
     onNavigateToHealthPrefs: () -> Unit,
     onSave: (Int, String, Double, Double, String, String, String, String, String) -> Unit
 ) {
+    val context = LocalContext.current
     var ageText by remember { mutableStateOf(userProfile.age.toString()) }
     var weightText by remember { mutableStateOf(userProfile.weight.toString()) }
     var heightText by remember { mutableStateOf(userProfile.height.toString()) }
@@ -1242,6 +1244,38 @@ fun ProfileEditTab(
     var medicalInput by remember { mutableStateOf(userProfile.medicalConditions) }
     var cuisineInput by remember { mutableStateOf(userProfile.cuisinePreferences) }
 
+    // Custom Profile Customization states
+    var coverStyleIndex by remember { mutableStateOf(0) }
+    val coverBrushes = listOf(
+        Brush.linearGradient(colors = listOf(Color(0xFF81C784), Color(0xFF1E5E2F))),
+        Brush.linearGradient(colors = listOf(Color(0xFFFFB74D), Color(0xFFE65100))),
+        Brush.linearGradient(colors = listOf(Color(0xFF64B5F6), Color(0xFF0D47A1)))
+    )
+
+    var avatarIndex by remember { mutableStateOf(0) }
+    val avatarEmojis = listOf("💪", "🏃‍♀️", "🧘", "🏆")
+
+    // Primary Setup states
+    var locationInput by remember { mutableStateOf("Dhaka, Bangladesh") }
+
+    // Display & Personalization states
+    var selectedFontSize by remember { mutableStateOf("Medium") }
+    var keepScreenOnEnabled by remember { mutableStateOf(false) }
+    var selectedHomeDesign by remember { mutableStateOf("Sleek Modern") }
+
+    // Notifications & Alert states
+    var notificationsEnabled by remember { mutableStateOf(true) }
+    var scheduleNotificationEnabled by remember { mutableStateOf(true) }
+    var shakeToNotifyEnabled by remember { mutableStateOf(true) }
+
+    // Dialog Toggle States
+    var showEditProfileDialog by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
+    var showContactUsDialog by remember { mutableStateOf(false) }
+    var showReportIssueDialog by remember { mutableStateOf(false) }
+    var showRateUsDialog by remember { mutableStateOf(false) }
+    var showAboutUsDialog by remember { mutableStateOf(false) }
+
     val genders = listOf("Male", "Female", "Other")
     val goals = listOf("Weight Loss", "Maintain Weight", "Weight Gain")
     val preferences = listOf("Vegetarian", "Non-Vegetarian", "Vegan", "Keto")
@@ -1250,116 +1284,217 @@ fun ProfileEditTab(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .padding(bottom = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Welcome and App Identity Banner
-        Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
-            modifier = Modifier.fillMaxWidth()
+        // COVER PHOTO & PROFILE PHOTO BLOCK
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
         ) {
-            Row(
+            // Cover Photo
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(18.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .height(130.dp)
+                    .background(coverBrushes[coverStyleIndex])
             ) {
-                Text("👤", fontSize = 42.sp)
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(10.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.Black.copy(alpha = 0.4f))
+                        .clickable { coverStyleIndex = (coverStyleIndex + 1) % coverBrushes.size }
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit Cover", tint = Color.White, modifier = Modifier.size(11.dp))
+                    Text(
+                        text = if (isBengali) "কভার পরিবর্তন" else "Change Cover",
+                        color = Color.White,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = if (isBengali) "আমার স্বাস্থ্য প্রোফাইল" else "User Biological Profile",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
-                        color = Color(0xFF1E5E2F)
-                    )
-                    Text(
-                        text = if (isBengali)
-                            "এখানে আপনার লক্ষ্য ও পরিমাপ পরিবর্তন করুন। প্রতিটি তথ্যের ভিত্তিতে ডায়েট ক্যালরি পরিবর্তিত হয়।"
-                        else
-                            "Edit baseline metrics. Adjusting active weight values changes Harris-Benedict formulas instantly.",
-                        fontSize = 11.sp,
-                        color = Color.DarkGray,
-                        lineHeight = 15.sp
-                    )
+            // Profile Photo Centered Overlap
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 10.dp)
+                    .size(90.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .border(3.dp, Color.White, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .background(Color(0xFFE8F5E9))
+                        .clickable { avatarIndex = (avatarIndex + 1) % avatarEmojis.size },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(avatarEmojis[avatarIndex], fontSize = 44.sp)
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF1E5E2F))
+                            .border(1.5.dp, Color.White, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.CameraAlt, contentDescription = "Change Avatar", tint = Color.White, modifier = Modifier.size(12.dp))
+                    }
                 }
             }
         }
 
-        // Action trigger to Health Preferential Settings
-        Button(
-            onClick = onNavigateToHealthPrefs,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(44.dp)
-                .testTag("health_prefs_screen_button")
-        ) {
-            Icon(imageVector = Icons.Default.Healing, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(8.dp))
+        // Bio Section
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                text = if (isBengali) "মেডিকেল কন্ডিশন ও রান্নার ধরণ সমন্বয় করুন" else "Customize Health Needs & Flavors",
+                text = if (isBengali) "স্বাস্থ্য অভিযাত্রী (Premium Unit)" else "ANEXSOPZ Wellness Champion",
                 fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                color = Color.White
+                fontSize = 16.sp,
+                color = Color(0xFF1E5E2F)
+            )
+            Text(
+                text = "${userProfile.goal} • Target calorie: ${userProfile.dailyCalorieTarget} kcal",
+                fontSize = 11.sp,
+                color = Color.Gray
             )
         }
 
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            border = BorderStroke(1.dp, Color(0xFFECEFF1)),
-            modifier = Modifier.fillMaxWidth()
+        // MAIN ACCOUNT OPTIONS
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Age Input
-                OutlinedTextField(
-                    value = ageText,
-                    onValueChange = { ageText = it },
-                    label = { Text(if (isBengali) "বয়স (Age)" else "Age (Years)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth().testTag("profile_age_input"),
-                    shape = RoundedCornerShape(12.dp)
-                )
+            AccountOptionRow(
+                emoji = "👤",
+                titleEn = "Edit Profile Parameters",
+                titleBn = "বায়োলজিক্যাল প্রোফাইল সংশোধন",
+                isBengali = isBengali,
+                onClick = { showEditProfileDialog = true }
+            )
 
-                // Height and Weight Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+            AccountOptionRow(
+                emoji = "🛠️",
+                titleEn = "Application Settings",
+                titleBn = "অ্যাপ্লিকেশন সেটিংস (সব ধরণের কনফিগ)",
+                isBengali = isBengali,
+                onClick = { showSettingsDialog = true }
+            )
+
+            AccountOptionRow(
+                emoji = "📞",
+                titleEn = "Contact Us",
+                titleBn = "যোগাযোগ করুন (Contact Us)",
+                isBengali = isBengali,
+                onClick = { showContactUsDialog = true }
+            )
+
+            AccountOptionRow(
+                emoji = "⚠️",
+                titleEn = "Report an Issue / Bug",
+                titleBn = "একটি সমস্যা রিপোর্ট করুন",
+                isBengali = isBengali,
+                onClick = { showReportIssueDialog = true }
+            )
+
+            AccountOptionRow(
+                emoji = "📤",
+                titleEn = "Share App Link",
+                titleBn = "অ্যাপ লিংক শেয়ার করুন",
+                isBengali = isBengali,
+                onClick = {
+                    val sendIntent = android.content.Intent().apply {
+                        action = android.content.Intent.ACTION_SEND
+                        putExtra(android.content.Intent.EXTRA_TEXT, "Log your daily meals, track hydration streaks, and view dynamic AI insights in ANEXSOPZ Health Plus! Download now.")
+                        type = "text/plain"
+                    }
+                    val shareIntent = android.content.Intent.createChooser(sendIntent, null)
+                    context.startActivity(shareIntent)
+                }
+            )
+
+            AccountOptionRow(
+                emoji = "⭐",
+                titleEn = "Rate Application",
+                titleBn = "আমাদের ভালো রেটিং দিন",
+                isBengali = isBengali,
+                onClick = { showRateUsDialog = true }
+            )
+
+            AccountOptionRow(
+                emoji = "ℹ️",
+                titleEn = "About ANEXSOPZ Health",
+                titleBn = "অ্যাপ পরিচিতি ও আমাদের তথ্য",
+                isBengali = isBengali,
+                onClick = { showAboutUsDialog = true }
+            )
+        }
+    }
+
+    // DISK / DIALOGS LAYER
+    if (showEditProfileDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditProfileDialog = false },
+            title = {
+                Text(
+                    text = if (isBengali) "প্রোফাইল সংশোধন করুন" else "Edit Core Profile Details",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = Color(0xFF1E5E2F)
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     OutlinedTextField(
-                        value = heightText,
-                        onValueChange = { heightText = it },
-                        label = { Text(if (isBengali) "উচ্চতা (সেমি)" else "Height (cm)") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.weight(1f).testTag("profile_height_input"),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    OutlinedTextField(
-                        value = weightText,
-                        onValueChange = { weightText = it },
-                        label = { Text(if (isBengali) "ওজন (কেজি)" else "Weight (kg)") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.weight(1f).testTag("profile_weight_input"),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
-
-                // Gender Options Dropdown Selector Replacement
-                Column {
-                    Text(text = if (isBengali) "লিঙ্গ বাছুন (Gender):" else "Gender:", fontSize = 12.sp, color = Color.Gray)
-                    Row(
+                        value = ageText,
+                        onValueChange = { ageText = it },
+                        label = { Text(if (isBengali) "বয়স (Age)" else "Age (Years)", fontSize = 11.sp) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                        shape = RoundedCornerShape(10.dp)
+                    )
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = heightText,
+                            onValueChange = { heightText = it },
+                            label = { Text(if (isBengali) "উচ্চতা (সেমি)" else "Height (cm)", fontSize = 11.sp) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+
+                        OutlinedTextField(
+                            value = weightText,
+                            onValueChange = { weightText = it },
+                            label = { Text(if (isBengali) "ওজন (কেজি)" else "Weight (kg)", fontSize = 11.sp) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    }
+
+                    Text(text = if (isBengali) "লিঙ্গ বাছুন (Gender)" else "Biological Gender:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         genders.forEach { gender ->
                             val isSel = selectedGender == gender
                             Box(
@@ -1369,113 +1504,445 @@ fun ProfileEditTab(
                                     .background(if (isSel) Color(0xFF2E7D32) else Color(0xFFF1F8E9))
                                     .border(1.dp, if (isSel) Color(0xFF1B5E20) else Color(0xFFC8E6C9), RoundedCornerShape(8.dp))
                                     .clickable { selectedGender = gender }
-                                    .padding(vertical = 10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = gender,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isSel) Color.White else Color(0xFF2E7D32),
-                                    fontSize = 12.sp
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Goal Options Selection
-                Column {
-                    Text(text = if (isBengali) "আপনার লক্ষ্য (Fitness Goal):" else "Target Fitness Goal:", fontSize = 12.sp, color = Color.Gray)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        goals.forEach { goal ->
-                            val isSel = selectedGoal == goal
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(if (isSel) Color(0xFF2E7D32) else Color(0xFFF1F8E9))
-                                    .border(1.dp, if (isSel) Color(0xFF1B5E20) else Color(0xFFC8E6C9), RoundedCornerShape(8.dp))
-                                    .clickable { selectedGoal = goal }
-                                    .padding(vertical = 10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = goal,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isSel) Color.White else Color(0xFF2E7D32),
-                                    fontSize = 11.sp,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Preference Selection
-                Column {
-                    Text(text = if (isBengali) "খাবারের ধরণ (Diet Preference):" else "Dietary Preference:", fontSize = 12.sp, color = Color.Gray)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        preferences.forEach { pref ->
-                            val isSel = selectedPreference == pref
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(if (isSel) Color(0xFF2E7D32) else Color(0xFFF1F8E9))
-                                    .border(1.dp, if (isSel) Color(0xFF1B5E20) else Color(0xFFC8E6C9), RoundedCornerShape(8.dp))
-                                    .clickable { selectedPreference = pref }
                                     .padding(vertical = 8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
+                                Text(gender, fontWeight = FontWeight.Bold, color = if (isSel) Color.White else Color(0xFF2E7D32), fontSize = 11.sp)
+                            }
+                        }
+                    }
+
+                    Text(text = if (isBengali) "আপনার লক্ষ্য (Fitness Goal)" else "Goal Target Path:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    goals.forEach { goal ->
+                        val isSel = selectedGoal == goal
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSel) Color(0xFF2E7D32) else Color(0xFFFAFAFA))
+                                .border(1.dp, if (isSel) Color(0xFF1B5E20) else Color(0xFFBBDEFB), RoundedCornerShape(8.dp))
+                                .clickable { selectedGoal = goal }
+                                .padding(vertical = 10.dp, horizontal = 12.dp)
+                        ) {
+                            Text(goal, fontWeight = FontWeight.Bold, color = if (isSel) Color.White else Color.DarkGray, fontSize = 11.sp)
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = allergiesInput,
+                        onValueChange = { allergiesInput = it },
+                        label = { Text(if (isBengali) "অ্যালার্জিসমূহ (Allergies)" else "Allergies & Limits", fontSize = 11.sp) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val age = ageText.toIntOrNull() ?: 25
+                        val w = weightText.toDoubleOrNull() ?: 70.0
+                        val h = heightText.toDoubleOrNull() ?: 175.0
+                        onSave(age, selectedGender, w, h, selectedGoal, selectedPreference, allergiesInput.trim(), medicalInput, cuisineInput)
+                        showEditProfileDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5E2F))
+                ) {
+                    Text(if (isBengali) "সংরক্ষণ" else "Save Details")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditProfileDialog = false }) {
+                    Text(if (isBengali) "বাতিল" else "Cancel")
+                }
+            }
+        )
+    }
+
+    if (showSettingsDialog) {
+        var activeSubTab by remember { mutableStateOf(0) }
+        val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+
+        AlertDialog(
+            onDismissRequest = { showSettingsDialog = false },
+            title = {
+                Text(
+                    text = if (isBengali) "🛠️ কনফিগারেশন সেটিংস" else "🛠️ Comfort & Settings Panel",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = Color(0xFF1E5E2F)
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        listOf(
+                            Triple(0, "📍 GPS", "Setup"),
+                            Triple(1, "🎨 Theme", "Display"),
+                            Triple(2, "🔔 Buzz", "Alerts")
+                        ).forEach { (idx, short, name) ->
+                            val isSel = activeSubTab == idx
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSel) Color(0xFF1E5E2F) else Color(0xFFEEEEEE))
+                                    .clickable { activeSubTab = idx }
+                                    .padding(vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Text(
-                                    text = pref,
+                                    text = if (isBengali) short else name,
+                                    fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isSel) Color.White else Color(0xFF2E7D32),
-                                    fontSize = 10.5.sp
+                                    color = if (isSel) Color.White else Color.DarkGray
+                                )
+                            }
+                        }
+                    }
+
+                    Divider(color = Color(0xFFECEFF1), thickness = 1.dp, modifier = Modifier.padding(vertical = 4.dp))
+
+                    when (activeSubTab) {
+                        0 -> {
+                            Text(
+                                text = if (isBengali) "১. প্রাথমিক সেটআপ (Primary Setup)" else "1. Primary Account Location Setup",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+
+                            OutlinedTextField(
+                                value = locationInput,
+                                onValueChange = { locationInput = it },
+                                label = { Text(if (isBengali) "আপনার অবস্থান (Location)" else "City & Location", fontSize = 11.sp) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+                        1 -> {
+                            Text(
+                                text = if (isBengali) "২. ডিসপ্লে ও পার্সোনালাইজেশন (Display Settings)" else "2. Personalized Layout Themes",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(if (isBengali) "ভাষা (Language Mode):" else "Language:", fontSize = 11.5.sp)
+                                Button(
+                                    onClick = { viewModel.toggleLanguage() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC8E6C9), contentColor = Color(0xFF1E5E2F)),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                    modifier = Modifier.height(28.dp)
+                                ) {
+                                    Text(if (isBengali) "English" else "বাংলা", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(if (isBengali) "রাত্রিকালীন মোড (Dark Theme):" else "Dark Theme Mode:", fontSize = 11.5.sp)
+                                Switch(
+                                    checked = isDarkTheme,
+                                    onCheckedChange = { viewModel.toggleTheme(context) }
+                                )
+                            }
+
+                            Text(if (isBengali) "ফন্ট সাইজ (Font Scale):" else "Text Font Size Profile:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                listOf("Small", "Medium", "Large").forEach { size ->
+                                    val isSel = selectedFontSize == size
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(if (isSel) Color(0xFFFFB74D) else Color(0xFFFAFAFA))
+                                            .border(1.dp, if (isSel) Color(0xFFE65100) else Color(0xFFEEEEEE), RoundedCornerShape(8.dp))
+                                            .clickable { selectedFontSize = size }
+                                            .padding(vertical = 5.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(size, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = if (isSel) Color.White else Color.DarkGray)
+                                    }
+                                }
+                            }
+
+                            Text(if (isBengali) "হোম কার্ড অর্ডার সাজান (Home Card order):" else "Home widget display priority order:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                listOf("Caloric first", "Hydration first", "Insight first").forEach { layoutText ->
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color(0xFFE8F5E9))
+                                            .clickable { Toast.makeText(context, "Home card order updated!", Toast.LENGTH_SHORT).show() }
+                                            .padding(vertical = 6.dp, horizontal = 4.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(layoutText, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E5E2F), textAlign = TextAlign.Center)
+                                    }
+                                }
+                            }
+
+                            Text(if (isBengali) "হোম স্ক্রীন ডিজাইন (Home screen design):" else "Home screen visual style layout:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                listOf("Sleek Modern", "Cosmic Slate", "Classic Grid").forEach { mode ->
+                                    val isSel = selectedHomeDesign == mode
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(if (isSel) Color(0xFF1D88E5) else Color(0xFFFAFAFA))
+                                            .clickable { selectedHomeDesign = mode }
+                                            .padding(vertical = 6.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(mode, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = if (isSel) Color.White else Color.DarkGray)
+                                    }
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(if (isBengali) "স্ক্রীন সচল রাখুন (Keep Screen On):" else "Keep screen active:", fontSize = 11.5.sp)
+                                Switch(
+                                    checked = keepScreenOnEnabled,
+                                    onCheckedChange = { keepScreenOnEnabled = it }
+                                )
+                            }
+                        }
+                        2 -> {
+                            Text(
+                                text = if (isBengali) "৩. নোটিফিকেশন ও অ্যালার্ট সেটিংস" else "3. Custom Notification Alerts",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(if (isBengali) "সব নোটিফিকেশনস (General alerts):" else "Receive Notification Alerts:", fontSize = 11.5.sp)
+                                Switch(
+                                    checked = notificationsEnabled,
+                                    onCheckedChange = { notificationsEnabled = it }
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(if (isBengali) "দিনে একটি পুশ বার্তা (Once per day):" else "Alert Limit to One Daily:", fontSize = 11.5.sp)
+                                Switch(
+                                    checked = scheduleNotificationEnabled,
+                                    onCheckedChange = { scheduleNotificationEnabled = it }
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(if (isBengali) "ঝাঁকিয়ে পুশ নোটিফিকেশন (Shake to notify):" else "Shake device to prompt log:", fontSize = 11.5.sp)
+                                Switch(
+                                    checked = shakeToNotifyEnabled,
+                                    onCheckedChange = { shakeToNotifyEnabled = it }
                                 )
                             }
                         }
                     }
                 }
-
-                // Allergies text field
-                OutlinedTextField(
-                    value = allergiesInput,
-                    onValueChange = { allergiesInput = it },
-                    label = { Text(if (isBengali) "অ্যালার্জিসমূহ (Allergies)" else "Allergies / Restrictions") },
-                    placeholder = { Text("e.g., Peanuts, Shrimp, Milk") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().testTag("profile_allergies_input"),
-                    shape = RoundedCornerShape(12.dp)
-                )
-            }
-        }
-
-        Button(
-            onClick = {
-                val age = ageText.toIntOrNull() ?: 25
-                val w = weightText.toDoubleOrNull() ?: 70.0
-                val h = heightText.toDoubleOrNull() ?: 175.0
-                onSave(age, selectedGender, w, h, selectedGoal, selectedPreference, allergiesInput.trim(), medicalInput, cuisineInput)
             },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-            shape = RoundedCornerShape(14.dp),
+            confirmButton = {
+                Button(
+                    onClick = { showSettingsDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5E2F))
+                ) {
+                    Text(if (isBengali) "ওকে" else "Save & Apply")
+                }
+            }
+        )
+    }
+
+    if (showContactUsDialog) {
+        AlertDialog(
+            onDismissRequest = { showContactUsDialog = false },
+            title = { Text(if (isBengali) "📞 আমাদের সাথে যোগাযোগ" else "Contact Customer Service Desk") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("📍 **HQ**: House 24, Road 12, Dhanmondi, Dhaka, Bangladesh", fontSize = 12.sp)
+                    Text("📧 **Support Link**: healthplus@anexsopz.com", fontSize = 12.sp)
+                    Text("📞 **Corporate Helpline**: +880 1712-ANEXSOPZ", fontSize = 12.sp)
+                    Text("🕒 **Response SLA**: Within 12-24 Hours", fontSize = 11.sp, color = Color.Gray)
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showContactUsDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5E2F))) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    if (showReportIssueDialog) {
+        var bugText by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showReportIssueDialog = false },
+            title = { Text(if (isBengali) "⚠️ সমস্যার কথা জানান" else "Flag an Issue / Technical Bug") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(if (isBengali) "ভুল ডাটা বা কারিগরি সমস্যার বিবরণ লিখুন:" else "Report bugs directly to developers:", fontSize = 11.sp)
+                    OutlinedTextField(
+                        value = bugText,
+                        onValueChange = { bugText = it },
+                        modifier = Modifier.fillMaxWidth().height(100.dp),
+                        placeholder = { Text("Search error... Crash on rotate... Meal planner off...") }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        Toast.makeText(context, "Thank you! Your issue report has been registered.", Toast.LENGTH_SHORT).show()
+                        showReportIssueDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5E2F))
+                ) {
+                    Text(if (isBengali) "প্রেরণ" else "Submit Bug")
+                }
+            }
+        )
+    }
+
+    if (showRateUsDialog) {
+        var userRating by remember { mutableStateOf(5) }
+        AlertDialog(
+            onDismissRequest = { showRateUsDialog = false },
+            title = { Text(if (isBengali) "⭐ আপনার রেটিং দিন" else "Encourage Our Creators") },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    Text(if (isBengali) "আমাদের কত স্টার দিবেন?" else "Show your love with a rating:", fontSize = 12.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        (1..5).forEach { star ->
+                            Text(
+                                text = if (star <= userRating) "★" else "☆",
+                                fontSize = 32.sp,
+                                color = if (star <= userRating) Color(0xFFFFB74D) else Color.Gray,
+                                modifier = Modifier.clickable { userRating = star }
+                            )
+                        }
+                    }
+                    Text(text = "Rating: $userRating / 5 Stars", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        Toast.makeText(context, "Rated $userRating/5! Highly appreciated.", Toast.LENGTH_SHORT).show()
+                        showRateUsDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5E2F))
+                ) {
+                    Text("Submit")
+                }
+            }
+        )
+    }
+
+    if (showAboutUsDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutUsDialog = false },
+            title = { Text(if (isBengali) "ℹ️ সংস্করণ ও পরিচিতি" else "ANEXSOPZ App Genealogy") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("**App Name**: ANEXSOPZ Health Plus", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("**Official Version**: v2.1.0-Release", fontSize = 11.sp)
+                    Text("**Developer**: ANEXSOPZ Technologies Group", fontSize = 11.sp)
+                    Text("Licensed and audited securely. All nutritional values correspond to modern WHO standards & local dietary guidelines.", fontSize = 11.sp, color = Color.DarkGray)
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showAboutUsDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5E2F))) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun AccountOptionRow(
+    emoji: String,
+    titleEn: String,
+    titleBn: String,
+    isBengali: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp)
-                .testTag("save_profile_button")
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = if (isBengali) "প্রোফাইল আপডেট করুন" else "Persist Updates",
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                color = Color.White
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(Color(0xFFE8F5E9), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(emoji, fontSize = 18.sp)
+                }
+
+                Text(
+                    text = if (isBengali) titleBn else titleEn,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.5.sp,
+                    color = Color(0xFF263238)
+                )
+            }
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = Color.Gray,
+                modifier = Modifier.size(18.dp)
             )
         }
     }

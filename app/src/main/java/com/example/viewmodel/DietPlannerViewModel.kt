@@ -32,6 +32,14 @@ data class FoodSearchResult(
     val imageUrl: String
 )
 
+data class InteractiveToastState(
+    val messageEn: String,
+    val messageBn: String,
+    val actionEn: String? = null,
+    val actionBn: String? = null,
+    val onAction: (() -> Unit)? = null
+)
+
 class DietPlannerViewModel(
     private val repository: DietPlannerRepository,
     private val context: Context
@@ -88,6 +96,30 @@ class DietPlannerViewModel(
 
     private val _isGenerating = MutableStateFlow(false)
     val isGenerating: StateFlow<Boolean> = _isGenerating.asStateFlow()
+
+    private val _interactiveToast = MutableStateFlow<InteractiveToastState?>(null)
+    val interactiveToast: StateFlow<InteractiveToastState?> = _interactiveToast.asStateFlow()
+
+    fun showInteractiveToast(
+        messageEn: String,
+        messageBn: String,
+        actionEn: String? = null,
+        actionBn: String? = null,
+        onAction: (() -> Unit)? = null
+    ) {
+        val current = InteractiveToastState(messageEn, messageBn, actionEn, actionBn, onAction)
+        _interactiveToast.value = current
+        viewModelScope.launch {
+            delay(5000)
+            if (_interactiveToast.value == current) {
+                _interactiveToast.value = null
+            }
+        }
+    }
+
+    fun dismissInteractiveToast() {
+        _interactiveToast.value = null
+    }
 
     private val _eventMessage = MutableStateFlow<String?>(null)
     val eventMessage: StateFlow<String?> = _eventMessage.asStateFlow()
@@ -279,6 +311,13 @@ class DietPlannerViewModel(
             val currentAmount = currentLog?.amountMl ?: 0
             val newAmount = (currentAmount + amountMl).coerceAtLeast(0)
             repository.saveWaterLog(WaterLogEntity(date = date, amountMl = newAmount))
+            showInteractiveToast(
+                messageEn = "Logged +${amountMl} mL of water! Total: ${newAmount} mL 💧",
+                messageBn = "+${amountMl} মি.লি. পানি যোগ হয়েছে! মোট: ${newAmount} মি.লি. 💧",
+                actionEn = "Add +250ml",
+                actionBn = "+২৫০মি.লি.",
+                onAction = { addWater(250) }
+            )
         }
     }
 
@@ -703,6 +742,13 @@ class DietPlannerViewModel(
         viewModelScope.launch {
             repository.saveExerciseLog(ExerciseLogEntity(date = date, activity = activity, durationMin = durationMin, caloriesBurned = caloriesBurned))
             _eventMessage.value = if (_isBengali.value) "ব্যায়াম সফলভাবে যোগ করা হয়েছে!" else "Exercise logged successfully!"
+            showInteractiveToast(
+                messageEn = "Logged $activity: ${durationMin} mins (${caloriesBurned} kcal) 🔥",
+                messageBn = "$activity ট্র্যাক সম্পূর্ণ: ${durationMin} মিনিট (${caloriesBurned} ক্যালোরি) 🔥",
+                actionEn = "Log Extra Walk (+15m)",
+                actionBn = "হাঁটা যোগ (+১৫মি)",
+                onAction = { addExerciseLog("Walking", 15, 75) }
+            )
         }
     }
 

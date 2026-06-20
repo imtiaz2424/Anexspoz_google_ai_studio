@@ -84,6 +84,42 @@ fun DietPlannerDashboard(viewModel: DietPlannerViewModel) {
         }
     }
 
+    // Shake to notify / Acc Sensor Support
+    DisposableEffect(Unit) {
+        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? android.hardware.SensorManager
+        val accelerometer = sensorManager?.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER)
+        var lastShakeTime: Long = 0
+        val listener = object : android.hardware.SensorEventListener {
+            override fun onSensorChanged(event: android.hardware.SensorEvent?) {
+                if (event == null) return
+                val x = event.values[0]
+                val y = event.values[1]
+                val z = event.values[2]
+                val gForce = Math.sqrt((x * x + y * y + z * z).toDouble()) / android.hardware.SensorManager.GRAVITY_EARTH
+                if (gForce > 2.8) {
+                    val now = System.currentTimeMillis()
+                    if (now - lastShakeTime > 4000) {
+                        lastShakeTime = now
+                        viewModel.showInteractiveToast(
+                            messageEn = "Device Shake Detected! Stay hydrated by drinking water 💧",
+                            messageBn = "ঝাঁকুনি সনাক্ত হয়েছে! পানি খেয়ে হাইড্রেটেড থাকুন 💧",
+                            actionEn = "Log +250ml",
+                            actionBn = "+২৫০মি.লি.",
+                            onAction = { viewModel.addWater(250) }
+                        )
+                    }
+                }
+            }
+            override fun onAccuracyChanged(sensor: android.hardware.Sensor?, accuracy: Int) {}
+        }
+        if (sensorManager != null && accelerometer != null) {
+            sensorManager.registerListener(listener, accelerometer, android.hardware.SensorManager.SENSOR_DELAY_UI)
+        }
+        onDispose {
+            sensorManager?.unregisterListener(listener)
+        }
+    }
+
     val currentHeaderDay = remember(isBengali) {
         val sdf = if (isBengali) {
             SimpleDateFormat("EEEE, dd MMMM", Locale("bn", "BD"))
@@ -722,11 +758,93 @@ fun DietPlannerDashboard(viewModel: DietPlannerViewModel) {
                         4 -> ProfileEditTab(
                             userProfile = userProfile!!,
                             isBengali = isBengali,
+                            viewModel = viewModel,
                             onNavigateToHealthPrefs = { showHealthPrefsScreen = true },
                             onSave = { age, gender, weight, height, goal, preference, allergies, medical, cuisine ->
                                 viewModel.saveProfile(age, gender, weight, height, goal, preference, allergies, medical, cuisine)
                             }
                         )
+                    }
+                }
+            }
+
+            // --- Interactive Toast Notification Overlay ---
+            val interactiveToast by viewModel.interactiveToast.collectAsState()
+            AnimatedVisibility(
+                visible = interactiveToast != null,
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 76.dp, start = 16.dp, end = 16.dp)
+            ) {
+                interactiveToast?.let { toast ->
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E5E2F)),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, Color(0xFF81C784), RoundedCornerShape(16.dp))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("🔔", fontSize = 18.sp)
+                                Text(
+                                    text = if (isBengali) toast.messageBn else toast.messageEn,
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                if (toast.actionEn != null && toast.onAction != null) {
+                                    Button(
+                                        onClick = {
+                                            toast.onAction.invoke()
+                                            viewModel.dismissInteractiveToast()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFFFFB74D),
+                                            contentColor = Color(0xFFE65100)
+                                        ),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.height(28.dp)
+                                    ) {
+                                        Text(
+                                            text = if (isBengali) toast.actionBn ?: "" else toast.actionEn,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                                IconButton(
+                                    onClick = { viewModel.dismissInteractiveToast() },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Close",
+                                        tint = Color.White.copy(alpha = 0.8f),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

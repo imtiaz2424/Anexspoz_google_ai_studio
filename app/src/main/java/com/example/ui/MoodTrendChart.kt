@@ -438,3 +438,24 @@ data class MoodTrendItem(
     val hasBoth: Boolean = false,
     val hasFoodLog: Boolean = false
 )
+
+@Composable
+fun LegendIndicator(color: Color, label: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Text(
+            text = label,
+            fontSize = 9.5.sp,
+            color = Color.Gray,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}

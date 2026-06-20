@@ -32,10 +32,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.ExerciseLogEntity
 import com.example.viewmodel.DietPlannerViewModel
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 @Composable
 fun WorkoutLogger(
@@ -67,15 +71,19 @@ fun WorkoutLogger(
         Triple("Others", if (isBengali) "অন্যান্য (Others)" else "Others", "⚙️")
     )
 
-    Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, Color(0xFFFFCC80).copy(alpha = 0.6f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = modifier
-            .fillMaxWidth()
-            .testTag("workout_logger_card_dashboard")
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, Color(0xFFFFCC80).copy(alpha = 0.6f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("workout_logger_card_dashboard")
+        ) {
         Column(
             modifier = Modifier.padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -425,4 +433,230 @@ fun WorkoutLogger(
             }
         }
     }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // --- Workout Calendar Section ---
+        var selectedCalendarDate by remember { mutableStateOf("") }
+        val allExerciseLogs by viewModel.allExerciseLogs.collectAsState()
+
+        WorkoutCalendarView(
+            allExerciseLogs = allExerciseLogs,
+            isBengali = isBengali,
+            selectedDateStr = selectedCalendarDate,
+            onDateSelect = { selectedCalendarDate = it }
+        )
+
+        if (selectedCalendarDate.isNotEmpty()) {
+            val logsForSelectedDate = allExerciseLogs.filter { it.date == selectedCalendarDate }
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFAFAFA)),
+                border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = if (isBengali) "📅 $selectedCalendarDate এর ব্যায়ামসমূহ" else "📅 Exercises on $selectedCalendarDate",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.5.sp,
+                        color = Color(0xFFD84315)
+                    )
+                    
+                    if (logsForSelectedDate.isEmpty()) {
+                        Text(
+                            text = if (isBengali) "এই দিনে কোনো ব্যায়াম রেকর্ড করা হয়নি।" else "No exercises logged on this date.",
+                            fontSize = 11.sp,
+                            color = Color.Gray
+                        )
+                    } else {
+                        logsForSelectedDate.forEach { log ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text("🔥", fontSize = 14.sp)
+                                    Column {
+                                        Text(log.activity, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                        Text("${log.durationMin} mins", fontSize = 10.sp, color = Color.Gray)
+                                    }
+                                }
+                                Text("-${log.caloriesBurned} kcal", fontWeight = FontWeight.Bold, color = Color(0xFFD84315), fontSize = 11.sp)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WorkoutCalendarView(
+    allExerciseLogs: List<ExerciseLogEntity>,
+    isBengali: Boolean,
+    selectedDateStr: String,
+    onDateSelect: (String) -> Unit
+) {
+    var calendarInstance by remember { mutableStateOf(Calendar.getInstance()) }
+    val currentMonthName = remember(calendarInstance, isBengali) {
+        val sdf = if (isBengali) {
+            SimpleDateFormat("MMMM yyyy", Locale("bn", "BD"))
+        } else {
+            SimpleDateFormat("MMMM yyyy", Locale.US)
+        }
+        sdf.format(calendarInstance.time)
+    }
+
+    val year = calendarInstance.get(Calendar.YEAR)
+    val month = calendarInstance.get(Calendar.MONTH) // 0-indexed
+    
+    val daysInMonth = calendarInstance.getActualMaximum(Calendar.DAY_OF_MONTH)
+    val monthHelper = remember(calendarInstance) {
+        val cal = calendarInstance.clone() as Calendar
+        cal.set(Calendar.DAY_OF_MONTH, 1)
+        cal
+    }
+    val firstDayOfWeek = monthHelper.get(Calendar.DAY_OF_WEEK) // 1 = Sun, 2 = Mon ...
+
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, Color(0xFFFFD180).copy(alpha = 0.5f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("workout_calendar_card_inner")
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = {
+                    val prev = calendarInstance.clone() as Calendar
+                    prev.add(Calendar.MONTH, -1)
+                    calendarInstance = prev
+                }) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Prev Month", tint = Color(0xFFE65100))
+                }
+
+                Text(
+                    text = currentMonthName,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = Color(0xFFE65100)
+                )
+
+                IconButton(onClick = {
+                    val next = calendarInstance.clone() as Calendar
+                    next.add(Calendar.MONTH, 1)
+                    calendarInstance = next
+                }) {
+                    Icon(Icons.Default.ArrowForward, contentDescription = "Next Month", tint = Color(0xFFE65100))
+                }
+            }
+
+            val shiftedDaysOfWeek = if (isBengali) {
+                listOf("শনি", "রবি", "সোম", "মঙ্গল", "বুধ", "বৃহ", "শুক্র")
+            } else {
+                listOf("Su", "Mo", "Tu", "We", "Th", "Fr", "Sa")
+            }
+
+            Row(modifier = Modifier.fillMaxWidth()) {
+                shiftedDaysOfWeek.forEach { dayName ->
+                    Text(
+                        text = dayName,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp,
+                        color = Color.Gray
+                    )
+                }
+            }
+
+            Divider(color = Color(0xFFFAFAFA), thickness = 0.5.dp)
+
+            val totalCells = (firstDayOfWeek - 1) + daysInMonth
+            val totalRows = (totalCells + 6) / 7
+
+            for (row in 0 until totalRows) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    for (col in 0 until 7) {
+                        val cellIndex = row * 7 + col
+                        val dayNumber = cellIndex - (firstDayOfWeek - 2)
+                        
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(1f)
+                                .padding(1.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (dayNumber in 1..daysInMonth) {
+                                val cellDateString = String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, dayNumber)
+                                val dayLogs = allExerciseLogs.filter { it.date == cellDateString }
+                                val hasWorkout = dayLogs.isNotEmpty()
+                                val isSelected = selectedDateStringEquals(selectedDateStr, cellDateString)
+                                
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (isSelected) Color(0xFFFFB74D)
+                                            else if (hasWorkout) Color(0xFFFFE0B2).copy(alpha = 0.6f)
+                                            else Color.Transparent
+                                        )
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (isSelected) Color(0xFFE65100) else if (hasWorkout) Color(0xFFFFB74D).copy(alpha = 0.5f) else Color.Transparent,
+                                            shape = CircleShape
+                                        )
+                                        .clickable {
+                                            if (isSelected) {
+                                                onDateSelect("")
+                                            } else {
+                                                onDateSelect(cellDateString)
+                                            }
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                                        Text(
+                                            text = dayNumber.toString(),
+                                            fontWeight = if (hasWorkout) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (hasWorkout) Color(0xFFE65100) else Color.DarkGray,
+                                            fontSize = 11.sp
+                                        )
+                                        if (hasWorkout) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(4.dp)
+                                                    .background(Color(0xFFE65100), CircleShape)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun selectedDateStringEquals(sel: String, cell: String): Boolean {
+    return sel == cell
 }

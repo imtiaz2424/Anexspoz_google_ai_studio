@@ -2,35 +2,41 @@ package com.example.ui
 
 import android.graphics.Paint
 import android.graphics.Typeface
+import androidx.compose.animation.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.geometry.Offset
 import com.example.viewmodel.DietPlannerViewModel
 import com.example.data.model.MoodLogEntity
 import com.example.data.model.FoodLogEntity
 import com.example.data.model.ExerciseLogEntity
+import com.example.data.model.WeightLogEntity
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -40,18 +46,27 @@ fun MoodAnalysisDashboard(
     isBengali: Boolean,
     modifier: Modifier = Modifier
 ) {
+    // Timeframe selector state: 7, 14, or 30 days
+    var selectedDaysLimit by remember { mutableStateOf(7) }
+    
+    // Core series toggles inspired by Recharts interactive legends
+    var showMood by remember { mutableStateOf(true) }
+    var showCaloriesIn by remember { mutableStateOf(true) }
+    var showWorkout by remember { mutableStateOf(true) }
+    var showWeight by remember { mutableStateOf(false) }
+
+    // Collect Room database log feeds
     val moodLogs by viewModel.currentMoodLogs.collectAsState()
     val foodLogs by viewModel.allFoodLogs.collectAsState()
     val exerciseLogs by viewModel.allExerciseLogs.collectAsState()
+    val weightLogs by viewModel.allWeightLogs.collectAsState()
 
-    var selectedDayIndex by remember { mutableStateOf(6) } // Defaults to today (6)
-
-    // Layout dates for past 7 days (index 0 is 6 days ago, index 6 is today)
-    val dateList = remember {
+    // Dynamically calculate past date list based on selected timeframe
+    val dateList = remember(selectedDaysLimit) {
         val list = mutableListOf<Date>()
         val cal = Calendar.getInstance()
-        cal.add(Calendar.DAY_OF_YEAR, -6)
-        for (i in 0..6) {
+        cal.add(Calendar.DAY_OF_YEAR, -(selectedDaysLimit - 1))
+        for (i in 0 until selectedDaysLimit) {
             list.add(cal.time)
             cal.add(Calendar.DAY_OF_YEAR, 1)
         }
@@ -62,53 +77,95 @@ fun MoodAnalysisDashboard(
     val dayFormatEn = remember { SimpleDateFormat("EEE", Locale.ENGLISH) }
     val dayFormatBn = remember { SimpleDateFormat("EEE", Locale("bn", "BD")) }
 
-    // Map logs to exact past 7 days
-    val weeklyData = remember(moodLogs, foodLogs, exerciseLogs, isBengali) {
+    // Map raw data streams to a highly uniform daily layout
+    val chartData = remember(moodLogs, foodLogs, exerciseLogs, weightLogs, dateList, selectedDaysLimit, isBengali) {
         dateList.map { date ->
             val dateStr = ymdFormat.format(date)
-            val label = if (isBengali) dayFormatBn.format(date) else dayFormatEn.format(date)
+            
+            // Format labels intelligently based on scale limit
+            val label = if (selectedDaysLimit > 7) {
+                val shortFormat = if (isBengali) {
+                    SimpleDateFormat("d MMM", Locale("bn", "BD"))
+                } else {
+                    SimpleDateFormat("MMM d", Locale.ENGLISH)
+                }
+                shortFormat.format(date)
+            } else {
+                if (isBengali) dayFormatBn.format(date) else dayFormatEn.format(date)
+            }
 
-            // Find logs for this specific date
+            // Filter data entries
             val moodsOnDay = moodLogs.filter { it.date == dateStr }
             val foodsOnDay = foodLogs.filter { it.date == dateStr }
             val exercisesOnDay = exerciseLogs.filter { it.date == dateStr }
+            val weightsOnDay = weightLogs.filter { it.date == dateStr }
 
-            // Calculate aggregate values or use latest
             val latestMoodLog = moodsOnDay.lastOrNull()
-            val moodString = latestMoodLog?.mood ?: "Neutral"
+            val moodString = latestMoodLog?.mood ?: ""
             val moodNote = latestMoodLog?.note ?: ""
 
-            // Mood score conversion (1 to 5 scale)
-            val moodScore = when (moodString.lowercase(Locale.ROOT)) {
-                "excellent", "happy" -> 5f
-                "good", "energized", "calm" -> 4f
-                "normal", "neutral" -> 3f
-                "anxious", "stressed", "tired" -> 2f
-                "sad", "angry" -> 1f
-                else -> 3f // Default
+            // Mood score scale 1 to 5
+            val moodScore = if (moodString.isNotBlank()) {
+                when (moodString.lowercase(Locale.ROOT)) {
+                    "excellent", "happy" -> 5f
+                    "good", "energized", "calm" -> 4f
+                    "normal", "neutral" -> 3f
+                    "anxious", "stressed", "tired" -> 2f
+                    "sad", "angry" -> 1f
+                    else -> 3f
+                }
+            } else {
+                null
             }
 
             val hasMeal = foodsOnDay.isNotEmpty()
-            val totalCalIn = foodsOnDay.sumOf { it.calories }.toFloat()
+            val caloriesIn = if (hasMeal) foodsOnDay.sumOf { it.calories }.toFloat() else 0f
 
             val hasExercise = exercisesOnDay.isNotEmpty()
-            val totalCalOut = exercisesOnDay.sumOf { it.caloriesBurned }.toFloat()
+            val caloriesOut = if (hasExercise) exercisesOnDay.sumOf { it.caloriesBurned }.toFloat() else 0f
 
-            MoodAnalysisItem(
+            val latestWeight = if (weightsOnDay.isNotEmpty()) weightsOnDay.last().weight.toFloat() else null
+
+            HealthTrendItem(
                 dateStr = dateStr,
                 label = label,
                 moodScore = moodScore,
-                moodString = moodString,
                 moodNote = moodNote,
                 hasMeal = hasMeal,
-                caloriesIn = totalCalIn,
+                caloriesIn = caloriesIn,
                 hasExercise = hasExercise,
-                caloriesOut = totalCalOut
+                caloriesOut = caloriesOut,
+                weight = latestWeight
             )
         }
     }
 
-    val selectedItem = weeklyData.getOrNull(selectedDayIndex)
+    // Selected node index for interactive scrub popover (defaults to the last item)
+    var selectedDayIndex by remember(selectedDaysLimit, chartData) { 
+        mutableStateOf(chartData.size - 1) 
+    }
+    
+    // Safety check selected index is inside bounds
+    val safeSelectedIndex = selectedDayIndex.coerceIn(0, chartData.size - 1)
+    val selectedItem = chartData.getOrNull(safeSelectedIndex)
+
+    // Compute dynamic scaling ceiling across the logs to optimize chart density
+    val maxCaloriesIn = remember(chartData) {
+        val maxVal = chartData.maxOfOrNull { it.caloriesIn } ?: 0f
+        if (maxVal < 1500f) 2500f else maxVal * 1.15f
+    }
+    val maxCaloriesOut = remember(chartData) {
+        val maxVal = chartData.maxOfOrNull { it.caloriesOut } ?: 0f
+        if (maxVal < 400f) 800f else maxVal * 1.15f
+    }
+    val minWeight = remember(chartData, weightLogs) {
+        val loggedMin = chartData.filter { it.weight != null }.mapNotNull { it.weight }.minOrNull()
+        if (loggedMin != null) (loggedMin - 5f).coerceAtLeast(30f) else 55f
+    }
+    val maxWeight = remember(chartData, weightLogs) {
+        val loggedMax = chartData.filter { it.weight != null }.mapNotNull { it.weight }.maxOrNull()
+        if (loggedMax != null) loggedMax + 5f else 95f
+    }
 
     Card(
         shape = RoundedCornerShape(24.dp),
@@ -119,10 +176,10 @@ fun MoodAnalysisDashboard(
             .testTag("mood_analysis_dashboard_card")
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
+            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header panel with applet/branding design style
+            // Header Section
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -135,20 +192,20 @@ fun MoodAnalysisDashboard(
                     Box(
                         modifier = Modifier
                             .size(40.dp)
-                            .background(Color(0xFFEDE7F6), CircleShape),
+                            .background(Color(0xFFF3E5F5), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("🧘", fontSize = 20.sp)
+                        Text("📊", fontSize = 20.sp)
                     }
                     Column {
                         Text(
-                            text = if (isBengali) "মনোভাব ও অভ্যাসের সমীকরণ" else "Mental & Habits Equation",
+                            text = if (isBengali) "মনোভাব ও স্বাস্থ্য পর্যবেক্ষণ ড্যাশবোর্ড" else "Recharts Health Analytics",
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = Color(0xFF4A148C)
                         )
                         Text(
-                            text = if (isBengali) "খাবার ও ব্যায়ামের সাথে মানসিক সংযোগ বিশ্লেষণ" else "Analyze emotional states overlaid with meals & activities",
+                            text = if (isBengali) "ক্যালরি, ওজন এবং মানসিক উদ্দীপনার দীর্ঘমেয়াদী সামঞ্জস্য" else "Long-term trends of calories, weight & mental velocity",
                             fontSize = 11.sp,
                             color = Color.Gray
                         )
@@ -157,206 +214,398 @@ fun MoodAnalysisDashboard(
 
                 Box(
                     modifier = Modifier
-                        .background(Color(0xFFFFF0F5), RoundedCornerShape(10.dp))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                        .background(Color(0xFFFFECEF), RoundedCornerShape(10.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = if (isBengali) "সক্রিয়" else "Active Analyzer",
+                        text = if (isBengali) "অফলাইন সিঙ্ক" else "Room Analytics",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 10.sp,
-                        color = Color(0xFFC2185B)
+                        fontSize = 9.sp,
+                        color = Color(0xFFE91E63)
                     )
                 }
             }
 
-            // Legend indicators
+            // Timeframe Segmented Selection Control
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                LegendIndicator(color = Color(0xFF9C27B0), label = if (isBengali) "মনোভাব সূচক (১-৫)" else "Mood Curve (1-5)")
-                LegendIndicator(color = Color(0xFF4CAF50), label = if (isBengali) "খাবার সংকেত (🍲)" else "Meal Marker (🍲)")
-                LegendIndicator(color = Color(0xFFFF9800), label = if (isBengali) "ব্যায়াম সংকেত (🏃)" else "Exercise Marker (🏃)")
+                Text(
+                    text = if (isBengali) "বিশ্লেষণ সময়সীমা:" else "Timeframe Span:",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.DarkGray
+                )
+                
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf(7, 14, 30).forEach { limit ->
+                        val isSelected = selectedDaysLimit == limit
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(if (isSelected) Color(0xFFE1BEE7) else Color(0xFFF5F5F5))
+                                .clickable { selectedDaysLimit = limit }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = if (isBengali) "$limit দিন" else "$limit Days",
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) Color(0xFF4A148C) else Color.Gray
+                            )
+                        }
+                    }
+                }
             }
 
-            // Modern Canvas-based Line Chart with Overlaid Meal/Activity markers
+            // Series Filters (Recharts Dynamic Legend Toggle)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFFAF9FB), RoundedCornerShape(16.dp))
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = if (isBengali) "গ্রাফে দেখানোর জন্য নির্বাচন করুন:" else "Interactive Series Filter (Toggle on/off):",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(bottom = 2.dp)
+                )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Mood series chip
+                    InteractiveSeriesChip(
+                        selected = showMood,
+                        color = Color(0xFF8E24AA),
+                        label = if (isBengali) "মনোভাব" else "Mood",
+                        onClick = { showMood = !showMood }
+                    )
+                    // Calories Intake chip
+                    InteractiveSeriesChip(
+                        selected = showCaloriesIn,
+                        color = Color(0xFF2E7D32),
+                        label = if (isBengali) "ক্যালরি গ্রহণ" else "Calories In",
+                        onClick = { showCaloriesIn = !showCaloriesIn }
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Workout Burn chip
+                    InteractiveSeriesChip(
+                        selected = showWorkout,
+                        color = Color(0xFFE65100),
+                        label = if (isBengali) "ব্যায়াম ক্ষয়" else "Workout Burn",
+                        onClick = { showWorkout = !showWorkout }
+                    )
+                    // Weight chip
+                    InteractiveSeriesChip(
+                        selected = showWeight,
+                        color = Color(0xFF0288D1),
+                        label = if (isBengali) "ওজন" else "Weight",
+                        onClick = { showWeight = !showWeight }
+                    )
+                }
+            }
+
+            // Modern Recharts-inspired Multi-Series Canvas Plot
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(210.dp)
+                    .height(220.dp)
                     .background(Color(0xFFFAFAFA), RoundedCornerShape(18.dp))
-                    .padding(8.dp)
+                    .padding(horizontal = 6.dp, vertical = 10.dp)
             ) {
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(weeklyData) {
+                        .pointerInput(chartData, selectedDaysLimit) {
+                            // Support tap and drag gestures for high-fidelity scrub feedback
                             detectTapGestures { offset ->
-                                val xSegmentWidth = (size.width - 120.dp.toPx()) / 6f
-                                val leftPadding = 60.dp.toPx()
-                                val clickedIndex = ((offset.x - leftPadding + xSegmentWidth/2f) / xSegmentWidth)
+                                val graphWidth = size.width - 90.dp.toPx()
+                                val leftPadding = 50.dp.toPx()
+                                val segmentWidth = graphWidth / (chartData.size - 1).coerceAtLeast(1)
+                                val index = ((offset.x - leftPadding + segmentWidth / 2f) / segmentWidth)
                                     .toInt()
-                                    .coerceIn(0, 6)
-                                selectedDayIndex = clickedIndex
+                                    .coerceIn(0, chartData.size - 1)
+                                selectedDayIndex = index
+                            }
+                        }
+                        .pointerInput(chartData, selectedDaysLimit) {
+                            detectDragGestures { change, _ ->
+                                change.consume()
+                                val graphWidth = size.width - 90.dp.toPx()
+                                val leftPadding = 50.dp.toPx()
+                                val segmentWidth = graphWidth / (chartData.size - 1).coerceAtLeast(1)
+                                val index = ((change.position.x - leftPadding + segmentWidth / 2f) / segmentWidth)
+                                    .toInt()
+                                    .coerceIn(0, chartData.size - 1)
+                                selectedDayIndex = index
                             }
                         }
                 ) {
-                    val leftPadding = 60.dp.toPx()
-                    val rightPadding = 60.dp.toPx()
-                    val topPadding = 25.dp.toPx()
-                    val bottomPadding = 35.dp.toPx()
+                    val leftPadding = 50.dp.toPx()
+                    val rightPadding = 40.dp.toPx()
+                    val topPadding = 15.dp.toPx()
+                    val bottomPadding = 30.dp.toPx()
                     val graphWidth = size.width - leftPadding - rightPadding
                     val graphHeight = size.height - topPadding - bottomPadding
 
-                    // Draw Horizontal Reference lines
-                    for (i in 0..4) {
-                        val y = topPadding + (i * (graphHeight / 4f))
+                    // 1. Draw horizontal grid reference lines
+                    val gridLinesCount = 4
+                    for (i in 0..gridLinesCount) {
+                        val y = topPadding + (i * (graphHeight / gridLinesCount))
                         drawLine(
-                            color = Color(0xFFE0E0E0),
+                            color = Color(0xFFEBEBEB),
                             start = Offset(leftPadding, y),
                             end = Offset(leftPadding + graphWidth, y),
                             strokeWidth = 1.dp.toPx(),
-                            pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(12f, 12f), 0f)
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 12f), 0f)
                         )
                     }
 
-                    // Y-Axis Mood emojis labels
-                    val moodEmojis = listOf("😭", "😰", "😐", "🧘", "😊")
-                    for (i in 0..4) {
-                        val labelY = topPadding + graphHeight - (i * (graphHeight / 4f))
-                        drawContext.canvas.nativeCanvas.drawText(
-                            moodEmojis[i],
-                            leftPadding - 32.dp.toPx(),
-                            labelY + 5.dp.toPx(),
-                            Paint().apply {
-                                textSize = 15.sp.toPx()
-                                textAlign = Paint.Align.LEFT
-                            }
-                        )
+                    // 2. Y-Axis Labels
+                    val textPaint = Paint().apply {
+                        textSize = 9.sp.toPx()
+                        color = android.graphics.Color.GRAY
+                        isAntiAlias = true
+                        typeface = Typeface.DEFAULT
                     }
-
-                    // Map all data points to vector coordinates
-                    val xSegmentWidth = graphWidth / 6f
-                    val points = weeklyData.mapIndexed { idx, item ->
-                        val x = leftPadding + (idx * xSegmentWidth)
-                        // Mood score Y coordinate (1f to 5f map)
-                        val moodY = topPadding + (5f - item.moodScore) / 4f * graphHeight
-                        Offset(x, moodY)
-                    }
-
-                    // Draw Selection Highlight Line
-                    val selectedX = leftPadding + selectedDayIndex * xSegmentWidth
-                    drawLine(
-                        color = Color(0xFF8E24AA).copy(alpha = 0.4f),
-                        start = Offset(selectedX, topPadding),
-                        end = Offset(selectedX, topPadding + graphHeight),
-                        strokeWidth = 1.5.dp.toPx(),
-                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f)
-                    )
-
-                    // Draw the primary Mood spline glow shadow gradient area
-                    val glowAreaPath = Path().apply {
-                        moveTo(leftPadding, topPadding + graphHeight)
-                        points.forEach { pt ->
-                            lineTo(pt.x, pt.ptY(topPadding + graphHeight))
+                    
+                    // Left label markers (Y-Axis reference points depending on active view)
+                    if (showMood) {
+                        val moodSymbols = listOf("😢", "😰", "😐", "🙂", "😊")
+                        for (i in 0..4) {
+                            val y = topPadding + graphHeight - (i * (graphHeight / 4f))
+                            drawContext.canvas.nativeCanvas.drawText(
+                                moodSymbols[i],
+                                leftPadding - 24.dp.toPx(),
+                                y + 4.dp.toPx(),
+                                Paint().apply {
+                                    textSize = 12.sp.toPx()
+                                }
+                            )
                         }
-                        lineTo(leftPadding + graphWidth, topPadding + graphHeight)
-                        close()
+                    } else if (showCaloriesIn) {
+                        for (i in 0..4) {
+                            val y = topPadding + graphHeight - (i * (graphHeight / 4f))
+                            val calValue = ((maxCaloriesIn / 4f) * i).toInt()
+                            drawContext.canvas.nativeCanvas.drawText(
+                                "${calValue}k",
+                                leftPadding - 32.dp.toPx(),
+                                y + 4.dp.toPx(),
+                                textPaint
+                            )
+                        }
+                    } else {
+                        // Standard generic percentage reference
+                        for (i in 0..4) {
+                            val y = topPadding + graphHeight - (i * (graphHeight / 4f))
+                            drawContext.canvas.nativeCanvas.drawText(
+                                "${i * 25}%",
+                                leftPadding - 28.dp.toPx(),
+                                y + 4.dp.toPx(),
+                                textPaint
+                            )
+                        }
                     }
-                    drawPath(
-                        path = glowAreaPath,
-                        brush = Brush.verticalGradient(
-                            colors = listOf(Color(0xFFE040FB).copy(alpha = 0.25f), Color(0xFFFAF0FF).copy(alpha = 0.01f)),
+
+                    // segment width calculation
+                    val segmentWidth = graphWidth / (chartData.size - 1).coerceAtLeast(1)
+
+                    // 3. Coordinate mapping helper for drawing curves
+                    val moodPoints = mutableListOf<Offset>()
+                    val calInPoints = mutableListOf<Offset>()
+                    val calOutPoints = mutableListOf<Offset>()
+                    val weightPoints = mutableListOf<Offset>()
+
+                    chartData.forEachIndexed { idx, item ->
+                        val x = leftPadding + (idx * segmentWidth)
+                        
+                        // Mood mapped 1..5
+                        val mScore = item.moodScore ?: 3f // fallback default intermediate
+                        val moodY = topPadding + (5f - mScore) / 4f * graphHeight
+                        moodPoints.add(Offset(x, moodY))
+
+                        // Calorie In
+                        val calInNorm = (item.caloriesIn / maxCaloriesIn).coerceIn(0f, 1f)
+                        val calInY = topPadding + (1f - calInNorm) * graphHeight
+                        calInPoints.add(Offset(x, calInY))
+
+                        // Calorie Out
+                        val calOutNorm = (item.caloriesOut / maxCaloriesOut).coerceIn(0f, 1f)
+                        val calOutY = topPadding + (1f - calOutNorm) * graphHeight
+                        calOutPoints.add(Offset(x, calOutY))
+
+                        // Weight
+                        val loggedWeight = item.weight ?: minWeight // fallback
+                        val weightNorm = ((loggedWeight - minWeight) / (maxWeight - minWeight).coerceAtLeast(1f)).coerceIn(0f, 1f)
+                        val weightY = topPadding + (1f - weightNorm) * graphHeight
+                        weightPoints.add(Offset(x, weightY))
+                    }
+
+                    // 4. Draw Glow Area & Lines (Recharts look & feel)
+                    
+                    // Series A: Calories In (Green smooth gradient area/spline overlay)
+                    if (showCaloriesIn) {
+                        val greenBrush = Brush.verticalGradient(
+                            colors = listOf(Color(0xFF4CAF50).copy(alpha = 0.22f), Color(0xFFE8F5E9).copy(alpha = 0.005f)),
                             startY = topPadding,
                             endY = topPadding + graphHeight
                         )
-                    )
-
-                    // Helper extension to keep code clean
-                    // Draw Smooth Mood Spline Curves
-                    for (i in 0 until points.size - 1) {
-                        drawLine(
-                            color = Color(0xFF8E24AA),
-                            start = points[i],
-                            end = points[i + 1],
-                            strokeWidth = 3.5.dp.toPx(),
-                            cap = StrokeCap.Round
-                        )
+                        val areaPath = Path().apply {
+                            moveTo(leftPadding, topPadding + graphHeight)
+                            calInPoints.forEach { pt -> lineTo(pt.x, pt.ptY(topPadding + graphHeight)) }
+                            lineTo(leftPadding + graphWidth, topPadding + graphHeight)
+                            close()
+                        }
+                        drawPath(path = areaPath, brush = greenBrush)
+                        
+                        for (i in 0 until calInPoints.size - 1) {
+                            drawLine(
+                                color = Color(0xFF2E7D32),
+                                start = calInPoints[i],
+                                end = calInPoints[i + 1],
+                                strokeWidth = 2.dp.toPx(),
+                                cap = StrokeCap.Round
+                            )
+                        }
                     }
 
-                    // Draw Data Points, Meal/Activity overlay markers directly on nodes!
-                    points.forEachIndexed { index, pt ->
-                        val item = weeklyData[index]
+                    // Series B: Mood Line (Violet thick smooth spline curve with bottom glow shadow)
+                    if (showMood) {
+                        val violetBrush = Brush.verticalGradient(
+                            colors = listOf(Color(0xFFD1C4E9).copy(alpha = 0.3f), Color(0xFFFAF0FF).copy(alpha = 0.01f)),
+                            startY = topPadding,
+                            endY = topPadding + graphHeight
+                        )
+                        val areaPath = Path().apply {
+                            moveTo(leftPadding, topPadding + graphHeight)
+                            moodPoints.forEach { pt -> lineTo(pt.x, pt.ptY(topPadding + graphHeight)) }
+                            lineTo(leftPadding + graphWidth, topPadding + graphHeight)
+                            close()
+                        }
+                        drawPath(path = areaPath, brush = violetBrush)
 
-                        // 1. Core node indicators
-                        drawCircle(
-                            color = if (index == selectedDayIndex) Color(0xFF8E24AA).copy(alpha = 0.35f) else Color.Transparent,
-                            radius = 10.dp.toPx(),
-                            center = pt
-                        )
-                        drawCircle(
-                            color = Color.White,
-                            radius = 5.dp.toPx(),
-                            center = pt
-                        )
-                        drawCircle(
-                            color = Color(0xFF8E24AA),
-                            radius = 3.dp.toPx(),
-                            center = pt
-                        )
+                        for (i in 0 until moodPoints.size - 1) {
+                            // Check if log is authenticated on this date to draw solid vs dotted
+                            val currentItem = chartData[i]
+                            val isLogged = currentItem.moodScore != null
+                            drawLine(
+                                color = Color(0xFF8E24AA),
+                                start = moodPoints[i],
+                                end = moodPoints[i + 1],
+                                strokeWidth = 3.5.dp.toPx(),
+                                pathEffect = if (isLogged) null else PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f),
+                                cap = StrokeCap.Round
+                            )
+                        }
+                    }
 
-                        // 2. Meal overlaid marker (🍲 badge hovering above the node)
-                        if (item.hasMeal) {
+                    // Series C: Workout Burn (Orange thin dashed lines indicating physical exertion spikes)
+                    if (showWorkout) {
+                        for (i in 0 until calOutPoints.size - 1) {
+                            drawLine(
+                                color = Color(0xFFE65100),
+                                start = calOutPoints[i],
+                                end = calOutPoints[i + 1],
+                                strokeWidth = 1.5.dp.toPx(),
+                                cap = StrokeCap.Round
+                            )
+                        }
+                    }
+
+                    // Series D: Body Weight (Steel Blue curve)
+                    if (showWeight) {
+                        for (i in 0 until weightPoints.size - 1) {
+                            drawLine(
+                                color = Color(0xFF0288D1),
+                                start = weightPoints[i],
+                                end = weightPoints[i + 1],
+                                strokeWidth = 2.dp.toPx(),
+                                cap = StrokeCap.Round
+                            )
+                        }
+                    }
+
+                    // 5. Draw Interactive Scrubber popover line
+                    val scrubX = leftPadding + safeSelectedIndex * segmentWidth
+                    drawLine(
+                        color = Color(0xFF7E57C2).copy(alpha = 0.7f),
+                        start = Offset(scrubX, topPadding),
+                        end = Offset(scrubX, topPadding + graphHeight),
+                        strokeWidth = 2.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f), 0f)
+                    )
+
+                    // Node circles for the selected index
+                    if (showMood) {
+                        drawCircle(color = Color(0xFF8E24AA), radius = 5.dp.toPx(), center = moodPoints[safeSelectedIndex])
+                        drawCircle(color = Color.White, radius = 2.5.dp.toPx(), center = moodPoints[safeSelectedIndex])
+                    }
+                    if (showCaloriesIn) {
+                        drawCircle(color = Color(0xFF2E7D32), radius = 5.dp.toPx(), center = calInPoints[safeSelectedIndex])
+                        drawCircle(color = Color.White, radius = 2.5.dp.toPx(), center = calInPoints[safeSelectedIndex])
+                    }
+                    if (showWorkout) {
+                        drawCircle(color = Color(0xFFE65100), radius = 5.dp.toPx(), center = calOutPoints[safeSelectedIndex])
+                        drawCircle(color = Color.White, radius = 2.5.dp.toPx(), center = calOutPoints[safeSelectedIndex])
+                    }
+                    if (showWeight) {
+                        drawCircle(color = Color(0xFF0288D1), radius = 5.dp.toPx(), center = weightPoints[safeSelectedIndex])
+                        drawCircle(color = Color.White, radius = 2.5.dp.toPx(), center = weightPoints[safeSelectedIndex])
+                    }
+
+                    // 6. Draw X-Axis Labels (Date day strings)
+                    // For longer timeframes, we show selectively to keep aesthetic clarity
+                    val labelInterval = when {
+                        selectedDaysLimit > 14 -> 5
+                        selectedDaysLimit > 7 -> 2
+                        else -> 1
+                    }
+
+                    chartData.forEachIndexed { index, item ->
+                        if (index % labelInterval == 0 || index == chartData.size - 1 || index == safeSelectedIndex) {
+                            val xLabel = leftPadding + index * segmentWidth
                             drawContext.canvas.nativeCanvas.drawText(
-                                "🍲",
-                                pt.x - 6.dp.toPx(),
-                                pt.y - 12.dp.toPx(),
+                                item.label,
+                                xLabel,
+                                topPadding + graphHeight + 18.dp.toPx(),
                                 Paint().apply {
-                                    textSize = 10.sp.toPx()
+                                    textSize = 8.5.sp.toPx()
+                                    color = if (index == safeSelectedIndex) android.graphics.Color.BLACK else android.graphics.Color.GRAY
+                                    typeface = if (index == safeSelectedIndex) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+                                    textAlign = Paint.Align.CENTER
+                                    isAntiAlias = true
                                 }
                             )
                         }
-
-                        // 3. Exercise overlaid marker (🏃 badge hovering below the node)
-                        if (item.hasExercise) {
-                            drawContext.canvas.nativeCanvas.drawText(
-                                "🏃",
-                                pt.x - 6.dp.toPx(),
-                                pt.y + 20.dp.toPx(),
-                                Paint().apply {
-                                    textSize = 10.sp.toPx()
-                                }
-                            )
-                        }
-
-                        // X-axis day name labels
-                        drawContext.canvas.nativeCanvas.drawText(
-                            item.label,
-                            pt.x,
-                            topPadding + graphHeight + 22.dp.toPx(),
-                            Paint().apply {
-                                textSize = 10.sp.toPx()
-                                color = if (index == selectedDayIndex) android.graphics.Color.BLACK else android.graphics.Color.GRAY
-                                isAntiAlias = true
-                                textAlign = Paint.Align.CENTER
-                                typeface = if (index == selectedDayIndex) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
-                            }
-                        )
                     }
                 }
             }
 
-            // Interactive Correlation Summary Info Box
+            // Interactive Tooltip popover statistics card (Directly below the graph)
             selectedItem?.let { item ->
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF3E5F5).copy(alpha = 0.4f)),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFAF6FC)),
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
                         modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -364,33 +613,36 @@ fun MoodAnalysisDashboard(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "${if (isBengali) "তারিখ ও দিন:" else "Date & Day:"} ${item.label} (${item.dateStr})",
+                                text = "📅  ${if (isBengali) "নির্বাচিত তারিখ:" else "Inspected Date:"} ${item.label} (${item.dateStr})",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF4A148C)
                             )
-
-                            val moodLiteral = when (item.moodString.lowercase(Locale.ROOT)) {
-                                "excellent", "happy" -> if (isBengali) "😊 অত্যন্ত চমৎকার" else "😊 Excellent / Happy"
-                                "good", "calm", "energized" -> if (isBengali) "🙂 বেশ ভালো / শান্ত" else "🙂 Good / Calm"
-                                "normal", "neutral" -> if (isBengali) "😐 স্বাভাবিক" else "😐 Normal / Neutral"
-                                "anxious", "stressed", "tired" -> if (isBengali) "😰 উদ্বিগ্ন / বিষণ্ণ" else "😰 Anxious / Stressed"
-                                "sad", "angry" -> if (isBengali) "😢 মন খারাপ" else "😢 Sad / Angry"
-                                else -> if (isBengali) "😐 স্বাভাবিক" else "😐 Neutral"
+                            
+                            val moodText = when (item.moodScore) {
+                                5f -> if (isBengali) "😊 অত্যন্ত চমৎকার" else "😊 Excellent"
+                                4f -> if (isBengali) "🙂 বেশ শান্ত / ভালো" else "🙂 Good / Calm"
+                                3f -> if (isBengali) "😐 স্বাভাবিক" else "😐 Neutral"
+                                2f -> if (isBengali) "😰 উদ্বিগ্ন / ক্লান্ত" else "😰 Stressed / Low"
+                                1f -> if (isBengali) "😢 মন খারাপ" else "😢 Sad / Gloomy"
+                                else -> if (isBengali) "📝 মেজাজ রেকর্ড নেই" else "📝 Unlogged Date"
                             }
                             Text(
-                                text = moodLiteral,
+                                text = moodText,
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.Black,
-                                color = Color(0xFF7B1FA2)
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF6A1B9A)
                             )
                         }
 
+                        Divider(color = Color(0xFFFFE0B2).copy(alpha = 0.5f))
+
+                        // Grid matrix of key series variables showing actual values
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            // Meal statistics for date
+                            // Column A: Calorie Intake
                             Row(
                                 modifier = Modifier.weight(1f),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -402,24 +654,24 @@ fun MoodAnalysisDashboard(
                                         .background(Color(0xFFE8F5E9), CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("🍲", fontSize = 12.sp)
+                                    Text("🍲", fontSize = 11.sp)
                                 }
                                 Column {
                                     Text(
-                                        text = if (isBengali) "খাবার গ্রহণ" else "Meals Taken",
-                                        fontSize = 10.sp,
+                                        text = if (isBengali) "ক্যালরি গ্রহণ" else "Calories In",
+                                        fontSize = 9.sp,
                                         color = Color.Gray
                                     )
                                     Text(
-                                        text = if (item.hasMeal) "${item.caloriesIn.toInt()} kcal" else (if (isBengali) "নেই" else "None"),
-                                        fontSize = 12.sp,
+                                        text = if (item.caloriesIn > 0) "${item.caloriesIn.toInt()} kcal" else (if (isBengali) "নেই" else "0 kcal"),
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (item.hasMeal) Color(0xFF2E7D32) else Color.Gray
+                                        color = Color(0xFF2E7D32)
                                     )
                                 }
                             }
 
-                            // Exercise statistics for date
+                            // Column B: Calorie Burned
                             Row(
                                 modifier = Modifier.weight(1f),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -431,79 +683,64 @@ fun MoodAnalysisDashboard(
                                         .background(Color(0xFFFFF3E0), CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("🏃", fontSize = 12.sp)
+                                    Text("🏃", fontSize = 11.sp)
                                 }
                                 Column {
                                     Text(
-                                        text = if (isBengali) "ব্যায়ামের মাত্রা" else "Workout Burn",
-                                        fontSize = 10.sp,
+                                        text = if (isBengali) "ব্যায়াম ক্ষয়" else "Workout Burn",
+                                        fontSize = 9.sp,
                                         color = Color.Gray
                                     )
                                     Text(
-                                        text = if (item.hasExercise) "${item.caloriesOut.toInt()} kcal" else (if (isBengali) "নেই" else "None"),
-                                        fontSize = 12.sp,
+                                        text = if (item.caloriesOut > 0) "${item.caloriesOut.toInt()} kcal" else (if (isBengali) "নেই" else "0 kcal"),
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (item.hasExercise) Color(0xFFE65100) else Color.Gray
+                                        color = Color(0xFFE65100)
+                                    )
+                                }
+                            }
+
+                            // Column C: weight
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .background(Color(0xFFE1F5FE), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("⚖️", fontSize = 11.sp)
+                                }
+                                Column {
+                                    Text(
+                                        text = if (isBengali) "শরীরের ওজন" else "Body Weight",
+                                        fontSize = 9.sp,
+                                        color = Color.Gray
+                                    )
+                                    Text(
+                                        text = if (item.weight != null) "${item.weight} kg" else (if (isBengali) "রেকর্ড নেই" else "-- kg"),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF0288D1)
                                     )
                                 }
                             }
                         }
 
-                        // Habits / Mood Correlation Wisdom insight!
-                        val insightText = remember(item, isBengali) {
-                            when {
-                                item.hasMeal && item.hasExercise && item.moodScore >= 4f -> {
-                                    if (isBengali)
-                                        "🌟 অসামান্য মিল! পুষ্টিকর খাবার গ্রহণ এবং শারীরিক ব্যায়াম আপনার মেজাজকে সর্বোচ্চ শিহরে উন্নীত করেছে।"
-                                    else
-                                        "🌟 Stellar correlation! Nutritious eating paired with physical exercise kept your mind at peak levels."
-                                }
-                                item.hasMeal && item.moodScore >= 4f -> {
-                                    if (isBengali)
-                                        "🍏 ভালো খাদ্য হজমে ইতিবাচক উদ্দীপনা জুগিয়েছে। খাবারের গুণাগুণ মেজাজ সুস্থ রাখে।"
-                                    else
-                                        "🍏 Healthy food choices kept your energy steady and built positive emotional loops today."
-                                }
-                                item.hasExercise && item.moodScore >= 4f -> {
-                                    if (isBengali)
-                                        "⚡ এন্ডোরফিন হরমোন নিঃসরণ! নিয়মতান্ত্রিক ব্যায়াম এবং শরীরচর্চা আপনার মানসিক ক্লান্তি মুক্ত করেছে।"
-                                    else
-                                        "⚡ Endorphin rush! Active moving built a healthy outlet and lifted your mood."
-                                }
-                                !item.hasMeal && !item.hasExercise && item.moodScore <= 2f -> {
-                                    if (isBengali)
-                                        "⚠️ সতর্ক বার্তা: আজকের খাদ্য লগ বা সচল ট্র্যাকিং শূন্য। একটু হাঁটাহাঁটি বা পুষ্টিকর খাবার আপনার বিষণ্ণতা দ্রুত কাটাতে পারে।"
-                                    else
-                                        "⚠️ Insight: Sedentary pattern detected alongside low spirit. Simple walking or a light meal can uplift you."
-                                }
-                                else -> {
-                                    if (isBengali)
-                                        "⚖️ মনোভাব বিশ্লেষণ স্থিতিশীল রয়েছে। পুষ্টিকর ডায়েট এবং সক্রিয় জীবন মানসিক ভারসাম্য বজায় রাখার সহজ চাবি।"
-                                    else
-                                        "⚖️ Balanced day. Keep logging meals and activities regularly to build predictive wellness insights."
-                                }
-                            }
-                        }
-
-                        Text(
-                            text = insightText,
-                            fontSize = 11.sp,
-                            color = Color(0xFF4A148C),
-                            fontWeight = FontWeight.Medium,
-                            lineHeight = 15.sp,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-
+                        // Daily Memo Annotation (if exists in journal)
                         if (item.moodNote.isNotBlank()) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(Color.White, RoundedCornerShape(8.dp))
+                                    .background(Color.White, RoundedCornerShape(10.dp))
                                     .padding(8.dp)
                             ) {
                                 Text(
-                                    text = "✍️ Memo: \"${item.moodNote}\"",
-                                    fontSize = 10.5.sp,
+                                    text = "📝 \"${item.moodNote}\"",
+                                    fontSize = 11.sp,
                                     color = Color.DarkGray,
                                     style = androidx.compose.ui.text.TextStyle(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                                 )
@@ -512,44 +749,138 @@ fun MoodAnalysisDashboard(
                     }
                 }
             }
+
+            // Wisdom diagnostics generation (Long-term health insights)
+            val computedWisdom = remember(chartData, selectedDaysLimit, isBengali) {
+                // Calculate correlation stats across the loaded timeframe span
+                val loggedMoods = chartData.filter { it.moodScore != null }
+                val avgMood = if (loggedMoods.isNotEmpty()) loggedMoods.mapNotNull { it.moodScore }.average() else 3.0
+                
+                val exerciseDays = chartData.filter { it.caloriesOut > 0f }
+                val moodOnExerciseDays = exerciseDays.filter { it.moodScore != null }.mapNotNull { it.moodScore }
+                val avgMoodOnExercise = if (moodOnExerciseDays.isNotEmpty()) moodOnExerciseDays.average() else null
+
+                val mealLogRatio = (chartData.filter { it.caloriesIn > 0f }.size.toFloat() / chartData.size.toFloat() * 100).toInt()
+
+                when {
+                    avgMoodOnExercise != null && avgMoodOnExercise > avgMood + 0.3 -> {
+                        if (isBengali) {
+                            "🧠 দীর্ঘমেয়াদী মনস্তাত্ত্বিক মিল: আপনার সক্রিয় ব্যায়ামের দিনগুলোতে মনোভাব সূচক গড়ে ${(String.format(Locale.ROOT, "%.1f", avgMoodOnExercise))}। ব্যায়াম আপনার মানসিক অবসাদ হটিয়ে দেয়!"
+                        } else {
+                            "🧠 Psycho-Habit Synergy: On active workout days, your average mood jumps to ${(String.format(Locale.ROOT, "%.1f", avgMoodOnExercise))}/5 (vs ${(String.format(Locale.ROOT, "%.1f", avgMood))} baseline). Keep moving!"
+                        }
+                    }
+                    mealLogRatio >= 70 -> {
+                        if (isBengali) {
+                            "🥗 চমৎকার তথ্যশৃঙ্খলা! বিগত ${selectedDaysLimit} দিনে আপনি ${mealLogRatio}% খাবারের হিসাব রেখেছেন। এটি সফল ডায়েট বাস্তবায়নের চাবি।"
+                        } else {
+                            "🥗 Stellar Tracking Consistency! You recorded food inputs on ${mealLogRatio}% of the days in this ${selectedDaysLimit}-day span. High tracking index is the master key to weight stability."
+                        }
+                    }
+                    avgMood < 2.5 -> {
+                        if (isBengali) {
+                            "⚠️ নিবিড় সংকেত: বিগত কয়েকদিনের সামগ্রিক মেজাজ সূচক সামান্য নিম্নমুখী। দিনে হালকা ২০ মিনিট গায়ে রোদ লাগান এবং স্বাস্থ্যকর জলপান বাড়ান।"
+                        } else {
+                            "⚠️ Energy Sink Detected: Overall emotional baseline suggests stress build-up. We recommend a 20-min sunrise walk and brief meditation spacing to reset."
+                        }
+                    }
+                    else -> {
+                        if (isBengali) {
+                            "⚖️ সুষম ভারসাম্য সূচক বজায় রয়েছে। দীর্ঘমেয়াদে পুষ্টিকর ডায়েট গ্রহণ এবং ক্যালরির সুষম সমন্বয় আপনার আবেগীয় হরমোনের অনুপাতকে সুরক্ষিত রাখে।"
+                        } else {
+                            "⚖️ Steady wellness index. Consistently balance nutrient intake with active exercise to preserve hormonal balance and stable moods over long horizons."
+                        }
+                    }
+                }
+            }
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFECEF).copy(alpha = 0.5f)),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text("💡", fontSize = 18.sp)
+                    Text(
+                        text = computedWisdom,
+                        fontSize = 11.5.sp,
+                        color = Color(0xFF880E4F),
+                        fontWeight = FontWeight.Medium,
+                        lineHeight = 16.sp
+                    )
+                }
+            }
         }
     }
 }
 
+// Custom Interactive Legend filter Chip
 @Composable
-fun LegendIndicator(color: Color, label: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+fun InteractiveSeriesChip(
+    selected: Boolean,
+    color: Color,
+    label: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = if (selected) color.copy(alpha = 0.12f) else Color.Transparent,
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = if (selected) color.copy(alpha = 0.4f) else Color.LightGray.copy(alpha = 0.5f)
+        ),
+        modifier = Modifier.testTag("series_filter_${label.lowercase(Locale.ROOT)}")
     ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(color)
-        )
-        Text(
-            text = label,
-            fontSize = 9.5.sp,
-            color = Color.Gray,
-            fontWeight = FontWeight.Medium
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(color),
+                contentAlignment = Alignment.Center
+            ) {
+                if (selected) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(6.dp)
+                    )
+                }
+            }
+            Text(
+                text = label,
+                fontSize = 10.sp,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                color = if (selected) Color.Black else Color.Gray
+            )
+        }
     }
 }
 
-// Helper to secure graph heights
+// Offset safety extensions inside graphs 
 private fun Offset.ptY(fallback: Float): Float {
     return if (this.y.isNaN() || this.y.isInfinite()) fallback else this.y
 }
 
-data class MoodAnalysisItem(
+data class HealthTrendItem(
     val dateStr: String,
     val label: String,
-    val moodScore: Float,
-    val moodString: String,
-    val moodNote: String,
+    val moodScore: Float?,
+    val moodString: String = "",
+    val moodNote: String = "",
     val hasMeal: Boolean,
     val caloriesIn: Float,
     val hasExercise: Boolean,
-    val caloriesOut: Float
+    val caloriesOut: Float,
+    val weight: Float?
 )
