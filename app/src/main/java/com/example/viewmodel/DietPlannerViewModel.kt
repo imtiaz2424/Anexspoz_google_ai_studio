@@ -908,7 +908,7 @@ class DietPlannerViewModel(
                 val url = "https://world.openfoodfacts.org/cgi/search.pl?search_terms=$encodedQuery&search_simple=1&action=process&json=1"
                 val request = okhttp3.Request.Builder()
                     .url(url)
-                    .header("User-Agent", "ANEXSOPZApp - Android - Version 1.0")
+                    .header("User-Agent", "NiljoriApp - Android - Version 1.0")
                     .build()
                 
                 withContext(Dispatchers.IO) {
@@ -978,7 +978,7 @@ class DietPlannerViewModel(
                 val url = "https://world.openfoodfacts.org/api/v0/product/$barcode.json"
                 val request = okhttp3.Request.Builder()
                     .url(url)
-                    .header("User-Agent", "ANEXSOPZApp - Android - Version 1.0")
+                    .header("User-Agent", "NiljoriApp - Android - Version 1.0")
                     .build()
                 
                 withContext(Dispatchers.IO) {

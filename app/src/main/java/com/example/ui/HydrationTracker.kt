@@ -109,9 +109,9 @@ fun HydrationTracker(
                 IconButton(
                     onClick = {
                         val shareMsg = if (isBengali) {
-                            "আজ আমি সুভেছা (Suvecha Wellness) এ আমার পানির লক্ষ্যমাত্রা ১০০০ মিলি লক্ষ্যমাত্রা থেকে $waterAmount/$targetWater মিলি ($percentage%) পূরণ করেছি! 💧 শরীর সুস্থ রাখুন, পর্যাপ্ত পানি পান করুন।"
+                            "আজ আমি নীলজরি (Niljori Health) এ আমার পানির লক্ষ্যমাত্রা ১০০০ মিলি লক্ষ্যমাত্রা থেকে $waterAmount/$targetWater মিলি ($percentage%) পূরণ করেছি! 💧 শরীর সুস্থ রাখুন, পর্যাপ্ত পানি পান করুন।"
                         } else {
-                            "I have tracked my hydration progress of $waterAmount / $targetWater mL ($percentage%) today on Suvecha Wellness! 💧 Stay healthy and stay hydrated!"
+                            "I have tracked my hydration progress of $waterAmount / $targetWater mL ($percentage%) today on Niljori Health! 💧 Stay healthy and stay hydrated!"
                         }
                         SharingUtils.shareText(context, shareMsg, if (isBengali) "হাইড্রেশন শেয়ার করুন" else "Share Hydration Achievement")
                     },

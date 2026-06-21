@@ -83,229 +83,235 @@ fun ToolsTab(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
         // Welcome and App Identity Banner
-        Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(18.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+        FlowingWaterAnimationWrapper(delayMillis = 0, modifier = Modifier.fillMaxWidth()) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                // Large styled Leaf logo
-                ANEXSOPZModernLogo(
-                    modifier = Modifier.size(64.dp),
-                    showText = false,
-                    isBengali = isBengali
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Large styled Leaf logo
+                    NiljoriModernLogo(
+                        modifier = Modifier.size(64.dp),
+                        showText = false,
+                        isBengali = isBengali
+                    )
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = if (isBengali) "শুভকামনা ও সুস্বাগতম!" else "Welcome to ANEXSOPZ!",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = if (isBengali)
-                            "সুষম খাবার ও ডায়েট প্ল্যান সম্পন্ন করার সেরা ডিজিটাল প্লে-গ্রাউন্ড। চলুন সুস্থ জীবন গড়ি একসঙ্গে!"
-                        else
-                            "Create nutritional diets, log metrics, track water in real-time, and live your best healthy life daily.",
-                        fontSize = 11.5.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        lineHeight = 15.sp
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isBengali) "শুভকামনা ও সুস্বাগতম!" else "Welcome to Niljori!",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = if (isBengali)
+                                "সুষম খাবার ও ডায়েট প্ল্যান সম্পন্ন করার সেরা ডিজিটাল প্লে-গ্রাউন্ড। চলুন সুস্থ জীবন গড়ি একসঙ্গে!"
+                            else
+                                "Create nutritional diets, log metrics, track water in real-time, and live your best healthy life daily.",
+                            fontSize = 11.5.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 15.sp
+                        )
+                    }
                 }
             }
         }
 
         // --- PLAYGROUND SANDBOX DEMO DATABASES POPULATION CARD ---
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFDE7)), // Beautiful light pastel yellow
-            border = BorderStroke(1.dp, Color(0xFFFBC02D)),
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("demo_mode_launcher_card")
-        ) {
-            Row(
+        FlowingWaterAnimationWrapper(delayMillis = 100, modifier = Modifier.fillMaxWidth()) {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFDE7)), // Beautiful light pastel yellow
+                border = BorderStroke(1.dp, Color(0xFFFBC02D)),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    .testTag("demo_mode_launcher_card")
             ) {
-                Text("🧪", fontSize = 24.sp)
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = if (isBengali) "প্লেগ্রাউন্ড ডেমো মোড" else "Playground Sandbox Mode",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        color = Color(0xFF5D4037)
-                    )
-                    Text(
-                        text = if (isBengali) 
-                            "এক ক্লিকে ৭ দিনের ডেমো ডাটা (খাবার, পানি, ওজন, মুড ও ব্যায়াম) লোড করুন এবং চেক করে দেখুন!" 
-                            else "Click to preload 7 days of demo foods, water levels, weight values, exercises, and mood logs!",
-                        fontSize = 11.sp,
-                        color = Color(0xFF795548),
-                        lineHeight = 14.sp
-                    )
-                }
-                Button(
-                    onClick = {
-                        val uid = viewModel.currentUserId.value
-                        viewModel.preloadAllDemoDataForUser(uid)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFBC02D)),
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    modifier = Modifier.testTag("preload_demo_data_btn")
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Text(
-                        text = if (isBengali) "লোড করুন" else "Seed Demo",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 11.sp,
-                        color = Color(0xFF5D4037)
-                    )
+                    Text("🧪", fontSize = 24.sp)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isBengali) "প্লেগ্রাউন্ড ডেমো মোড" else "Playground Sandbox Mode",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = Color(0xFF5D4037)
+                        )
+                        Text(
+                            text = if (isBengali) 
+                                "এক ক্লিকে ৭ দিনের ডেমো ডাটা (খাবার, পানি, ওজন, মুড ও ব্যায়াম) লোড করুন এবং চেক করে দেখুন!" 
+                                else "Click to preload 7 days of demo foods, water levels, weight values, exercises, and mood logs!",
+                            fontSize = 11.sp,
+                            color = Color(0xFF795548),
+                            lineHeight = 14.sp
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            val uid = viewModel.currentUserId.value
+                            viewModel.preloadAllDemoDataForUser(uid)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFBC02D)),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.testTag("preload_demo_data_btn")
+                    ) {
+                        Text(
+                            text = if (isBengali) "লোড করুন" else "Seed Demo",
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 11.sp,
+                            color = Color(0xFF5D4037)
+                        )
+                    }
                 }
             }
         }
 
         // --- PERSISTENT SEAMLESS QUICK SETTINGS & EMERGENCY MAP QUICK-LINK ---
         val locationPrefVal by viewModel.locationPref.collectAsState()
-        Card(
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = BorderStroke(1.2.dp, MaterialTheme.colorScheme.outlineVariant),
-            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+        FlowingWaterAnimationWrapper(delayMillis = 200, modifier = Modifier.fillMaxWidth()) {
+            Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.2.dp, MaterialTheme.colorScheme.outlineVariant),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = if (isBengali) "⚙️ কুইক সেটিং ও কাস্টম প্রেফারেন্স" else "⚙️ Instant Preferences & Safety Links",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.5.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = if (isBengali) "অটো সেভ" else "Auto-Save Enabled",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 8.5.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-
-                // Row of Switch and Quick Toggles
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    // Language Switch Button
-                    Button(
-                        onClick = { viewModel.toggleLanguage() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(1f).height(36.dp),
-                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp)
-                    ) {
-                        Text(if (isBengali) "🇺🇸 Language: EN" else "🇧🇩 ভাষা: বাংলা", fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    // Theme Mode Toggle Button
-                    Button(
-                        onClick = { viewModel.toggleTheme(context) },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(1f).height(36.dp),
-                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = if (isDarkTheme) {
-                                if (isBengali) "☀️ লাইট মোড" else "☀️ Light Mode"
-                            } else {
-                                if (isBengali) "🌙 ডার্ক মোড" else "🌙 Dark Mode"
-                            },
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), thickness = 0.8.dp)
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("📍", fontSize = 14.sp)
-                        Column {
+                        Text(
+                            text = if (isBengali) "⚙️ কুইক সেটিং ও কাস্টম প্রেফারেন্স" else "⚙️ Instant Preferences & Safety Links",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.5.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
                             Text(
-                                text = if (isBengali) "আমার ডিফেন্ডার জোন" else "My GPS Defender Zone",
-                                fontSize = 9.5.sp,
-                                color = Color.Gray,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = locationPrefVal,
-                                fontSize = 11.sp,
+                                text = if (isBengali) "অটো সেভ" else "Auto-Save Enabled",
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                fontSize = 8.5.sp,
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
 
-                    // Direct shortcut trigger to expand Nearby Helper Map instantly!
-                    Button(
-                        onClick = { activeSection = "volunteer" },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                        modifier = Modifier.height(32.dp).testTag("direct_helper_map_btn")
+                    // Row of Switch and Quick Toggles
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        // Language Switch Button
+                        Button(
+                            onClick = { viewModel.toggleLanguage() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f).height(36.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp)
+                        ) {
+                            Text(if (isBengali) "🇺🇸 Language: EN" else "🇧🇩 ভাষা: বাংলা", fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        // Theme Mode Toggle Button
+                        Button(
+                            onClick = { viewModel.toggleTheme(context) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f).height(36.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = if (isDarkTheme) {
+                                    if (isBengali) "☀️ লাইট মোড" else "☀️ Light Mode"
+                                } else {
+                                    if (isBengali) "🌙 ডার্ক মোড" else "🌙 Dark Mode"
+                                },
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), thickness = 0.8.dp)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Text("🗺️", fontSize = 11.sp)
-                            Text(
-                                text = if (isBengali) "নিকটস্থ ম্যাপ দেখুন" else "Show Helper Map",
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 10.sp,
-                                color = Color.White
-                            )
+                            Text("📍", fontSize = 14.sp)
+                            Column {
+                                Text(
+                                    text = if (isBengali) "আমার ডিফেন্ডার জোন" else "My GPS Defender Zone",
+                                    fontSize = 9.5.sp,
+                                    color = Color.Gray,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = locationPrefVal,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        // Direct shortcut trigger to expand Nearby Helper Map instantly!
+                        Button(
+                            onClick = { activeSection = "volunteer" },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp).testTag("direct_helper_map_btn")
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("🗺️", fontSize = 11.sp)
+                                Text(
+                                    text = if (isBengali) "নিকটস্থ ম্যাপ দেখুন" else "Show Helper Map",
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 10.sp,
+                                    color = Color.White
+                                )
+                            }
                         }
                     }
                 }
@@ -334,166 +340,168 @@ fun ToolsTab(
         }
         val moodText = todayMoodLog?.mood ?: (if (isBengali) "লগ করা হয়নি" else "No Entry")
 
-        Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("real_time_overview_card")
-        ) {
-            Box(
+        FlowingWaterAnimationWrapper(delayMillis = 300, modifier = Modifier.fillMaxWidth()) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                 modifier = Modifier
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFFE3F2FD), // Subtle soft blue
-                                Color(0xFFF1F8E9)  // Soft light pastel green
-                            )
-                        )
-                    )
-                    .padding(18.dp)
+                    .fillMaxWidth()
+                    .testTag("real_time_overview_card")
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = if (isBengali) "আজকের স্বাস্থ্য ও নিরাপত্তা ইন্টেল" else "Daily Wellness & Safety Hub",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 13.5.sp,
-                            color = Color(0xFF263238)
+                Box(
+                    modifier = Modifier
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFFE3F2FD), // Subtle soft blue
+                                    Color(0xFFB3E5FC)  // Soft refreshing sea/sky blue
+                                )
+                            )
                         )
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFFE8F5E9))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .padding(18.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (isBengali) "লাইভ আপডেট" else "Live Specs",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 8.5.sp,
-                                color = Color(0xFF2E7D32)
+                                text = if (isBengali) "আজকের স্বাস্থ্য ও নিরাপত্তা ইন্টেল" else "Daily Wellness & Safety Hub",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 13.5.sp,
+                                color = Color(0xFF263238)
                             )
-                        }
-                    }
-
-                    // Simple stats row: Calorie intake / Mood of the day / Safety Standby
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        // Stat 1: Calories
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .background(Color.White, RoundedCornerShape(12.dp))
-                                .padding(10.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = if (isBengali) "খাদ্য ও ক্যালোরি" else "Logged Diet",
-                                fontSize = 10.sp,
-                                color = Color.Gray,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(
-                                    text = "🍎 $todayCalories",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color(0xFF2E7D32)
-                                )
-                                Text(
-                                    text = "/ $targetCalories",
-                                    fontSize = 9.sp,
-                                    color = Color.DarkGray
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(2.dp))
-                            LinearProgressIndicator(
-                                progress = calorieProgressFraction,
-                                color = Color(0xFF4CAF50),
-                                trackColor = Color(0xFFE8F5E9),
-                                strokeCap = StrokeCap.Round,
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(4.dp)
-                            )
-                        }
-
-                        // Stat 2: Mood of the Day
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .background(Color.White, RoundedCornerShape(12.dp))
-                                .padding(10.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = if (isBengali) "সারাদিনের অনুভূতি" else "Today's Mood",
-                                fontSize = 10.sp,
-                                color = Color.Gray,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(Color(0xFFE0F7FA))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
                                 Text(
-                                    text = "$moodEmoji $moodText",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color(0xFF5E35B1),
-                                    maxLines = 1
+                                    text = if (isBengali) "লাইভ আপডেট" else "Live Specs",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 8.5.sp,
+                                    color = Color(0xFF0288D1)
                                 )
                             }
-                            Text(
-                                text = if (todayMoodLog != null) {
-                                    if (isBengali) "লগ সম্পন্ন হয়েছে" else "Logged successfully"
-                                } else {
-                                    if (isBengali) "এখনই মুড চাপুন!" else "Tap below to log!"
-                                },
-                                fontSize = 8.5.sp,
-                                color = Color.Gray,
-                                lineHeight = 10.sp
-                            )
                         }
 
-                        // Stat 3: SOS Support
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .background(Color.White, RoundedCornerShape(12.dp))
-                                .padding(10.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        // Simple stats row: Calorie intake / Mood of the day / Safety Standby
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Text(
-                                text = if (isBengali) "এসওএস সেফটি" else "Distress safety",
-                                fontSize = 10.sp,
-                                color = Color.Gray,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Box(
+                            // Stat 1: Calories
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .background(Color.White, RoundedCornerShape(12.dp))
+                                    .padding(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = if (isBengali) "খাদ্য ও ক্যালোরি" else "Logged Diet",
+                                    fontSize = 10.sp,
+                                    color = Color.Gray,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(
+                                        text = "🍎 $todayCalories",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFF0288D1)
+                                    )
+                                    Text(
+                                        text = "/ $targetCalories",
+                                        fontSize = 9.sp,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                LinearProgressIndicator(
+                                    progress = calorieProgressFraction,
+                                    color = Color(0xFF00ACC1),
+                                    trackColor = Color(0xFFE0F7FA),
+                                    strokeCap = StrokeCap.Round,
                                     modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(0xFFD32F2F))
-                                )
-                                Spacer(modifier = Modifier.width(3.dp))
-                                Text(
-                                    text = if (isBengali) "সক্রিয় সাহায্য" else "Standby",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color(0xFFB71C1C)
+                                        .fillMaxWidth()
+                                        .height(4.dp)
                                 )
                             }
-                            Text(
-                                text = if (isBengali) "রিমোট রেসপন্ডার রেডি" else "Volunteers on standby",
-                                fontSize = 8.5.sp,
-                                color = Color.Gray,
-                                lineHeight = 10.sp
-                            )
+
+                            // Stat 2: Mood of the Day
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .background(Color.White, RoundedCornerShape(12.dp))
+                                    .padding(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = if (isBengali) "সারাদিনের অনুভূতি" else "Today's Mood",
+                                    fontSize = 10.sp,
+                                    color = Color.Gray,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(
+                                        text = "$moodEmoji $moodText",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFF5E35B1),
+                                        maxLines = 1
+                                    )
+                                }
+                                Text(
+                                    text = if (todayMoodLog != null) {
+                                        if (isBengali) "লগ সম্পন্ন হয়েছে" else "Logged successfully"
+                                    } else {
+                                        if (isBengali) "এখনই মুড চাপুন!" else "Tap below to log!"
+                                    },
+                                    fontSize = 8.5.sp,
+                                    color = Color.Gray,
+                                    lineHeight = 10.sp
+                                )
+                            }
+
+                            // Stat 3: SOS Support
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .background(Color.White, RoundedCornerShape(12.dp))
+                                    .padding(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = if (isBengali) "এসওএস সেফটি" else "Distress safety",
+                                    fontSize = 10.sp,
+                                    color = Color.Gray,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFFD32F2F))
+                                    )
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        text = if (isBengali) "সক্রিয় সাহায্য" else "Standby",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFFB71C1C)
+                                    )
+                                }
+                                Text(
+                                    text = if (isBengali) "রিমোট রেসপন্ডার রেডি" else "Volunteers on standby",
+                                    fontSize = 8.5.sp,
+                                    color = Color.Gray,
+                                    lineHeight = 10.sp
+                                )
+                            }
                         }
                     }
                 }

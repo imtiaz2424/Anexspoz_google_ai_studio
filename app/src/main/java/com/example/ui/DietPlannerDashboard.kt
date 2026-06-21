@@ -148,7 +148,7 @@ fun DietPlannerDashboard(viewModel: DietPlannerViewModel) {
             isBengali = isBengali,
             onLogin = { email, password, onResult ->
                 viewModel.login(email, password) { success, error ->
-                    if (success && (email == "guest@niljori.com" || email == "guest@subecha.com")) {
+                    if (success && (email == "guest@niljori.com")) {
                         viewModel.preloadAllDemoDataForUser("guest")
                     }
                     onResult(success, error)
@@ -156,7 +156,7 @@ fun DietPlannerDashboard(viewModel: DietPlannerViewModel) {
             },
             onSignUp = { email, password, onResult ->
                 viewModel.signup(email, password) { success, error ->
-                    if (success && (email == "guest@niljori.com" || email == "guest@subecha.com")) {
+                    if (success && (email == "guest@niljori.com")) {
                         viewModel.preloadAllDemoDataForUser("guest")
                     }
                     onResult(success, error)
@@ -215,7 +215,7 @@ fun DietPlannerDashboard(viewModel: DietPlannerViewModel) {
 
                         Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(bottom = 16.dp))
 
-                        // Custom Suvecha upper drawer items (Shopping List, AI Coach, Ratings, Info Manual)
+                        // Custom Niljori upper drawer items (Shopping List, AI Coach, Ratings, Info Manual)
                         val upperDrawerItems = listOf(
                             Triple(if (isBengali) "সাপ্তাহিক বাজারের ফর্দ" else "Weekly Shopping List", Icons.Default.ShoppingCart) {
                                 showShoppingListScreen = true
@@ -231,7 +231,7 @@ fun DietPlannerDashboard(viewModel: DietPlannerViewModel) {
                             }
                         )
 
-                        // Custom Suvecha lower drawer items (Terms, Privacy)
+                        // Custom Niljori lower drawer items (Terms, Privacy)
                         val lowerDrawerItems = listOf(
                             Triple(if (isBengali) "ব্যবহারের শর্তাবলী" else "Terms & Conditions", Icons.Default.Description) {
                                 showTermsDialog = true
@@ -328,7 +328,7 @@ fun DietPlannerDashboard(viewModel: DietPlannerViewModel) {
                             }
                         }
 
-                        // Footer section with Suvecha brand, version and sign out
+                        // Footer section with Niljori brand, version and sign out
                         Divider(color = Color(0xFFEEEEEE), modifier = Modifier.padding(bottom = 12.dp))
                         
                         Row(
@@ -555,16 +555,6 @@ fun DietPlannerDashboard(viewModel: DietPlannerViewModel) {
 
                             if (showQuickLogDialog) {
                                 NiljoriQuickLogDialog(
-                                    viewModel = viewModel,
-                                    isBengali = isBengali,
-                                    onDismiss = { showQuickLogDialog = false }
-                                )
-                            }nDismiss = { showAppInfoDialog = false }
-                                )
-                            }
-
-                            if (showQuickLogDialog) {
-                                ANEXSOPZQuickLogDialog(
                                     viewModel = viewModel,
                                     isBengali = isBengali,
                                     onDismiss = { showQuickLogDialog = false }

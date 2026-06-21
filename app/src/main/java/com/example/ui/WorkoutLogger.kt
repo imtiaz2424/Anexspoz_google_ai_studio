@@ -128,9 +128,9 @@ fun WorkoutLogger(
                     IconButton(
                         onClick = {
                             val shareMessage = if (isBengali) {
-                                "আজ আমার সুভেছা (Suvecha Wellness) এ করা ব্যায়াম সেশন সম্পন্ন হয়েছে! সর্বমোট $totalDuration মিনিট পরিশ্রম করে $totalCalories কিলো-ক্যালোরি পুড়িয়েছি! 🔥 শরীর ফিট রাখুন!"
+                                "আজ আমার নীলজরি (Niljori Health) এ করা ব্যায়াম সেশন সম্পন্ন হয়েছে! সর্বমোট $totalDuration মিনিট পরিশ্রম করে $totalCalories কিলো-ক্যালোরি পুড়িয়েছি! 🔥 শরীর ফিট রাখুন!"
                             } else {
-                                "I completed my workout logs on Suvecha Wellness today! Total active duration: $totalDuration mins, burning $totalCalories kcal! 🔥 Stay active!"
+                                "I completed my workout logs on Niljori Health today! Total active duration: $totalDuration mins, burning $totalCalories kcal! 🔥 Stay active!"
                             }
                             SharingUtils.shareText(context, shareMessage, "Share Workout Log")
                         },

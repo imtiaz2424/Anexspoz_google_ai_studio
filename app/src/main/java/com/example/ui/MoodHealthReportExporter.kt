@@ -442,10 +442,10 @@ private fun generateTextReport(
 
     val footer = if (isBengali) {
         "\n--------------------------------------\n" +
-                "🌱 ANEXSOPZ ডিজিট্যাল ডায়েরি দ্বারা তৈরি।"
+                "💧 নীলজরি ডিজিট্যাল ডায়েরি দ্বারা তৈরি।"
     } else {
         "\n--------------------------------------\n" +
-                "🌱 Generated with ANEXSOPZ Live Companion."
+                "💧 Generated with Niljori Live Companion."
     }
 
     return titleText + statsSection + breakdownHeader + (if (dailyBreakdowns.isNotEmpty()) dailyBreakdowns.toString() else (if (isBengali) "কোনও রেকর্ডকৃত ডায়েরি পাওয়া যায়নি।\n\n" else "No valid entries tracked in this timeframe.\n\n")) + insightsSection + footer

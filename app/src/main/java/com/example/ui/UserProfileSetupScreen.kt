@@ -116,15 +116,15 @@ fun UserProfileSetupScreen(
                             Text("🎉", fontSize = 36.sp)
                             Column {
                                 Text(
-                                    text = if (isBengali) "ANEXSOPZ অ্যাপে আপনাকে স্বাগত!" else "Welcome to ANEXSOPZ Health!",
+                                    text = if (isBengali) "নীলজরি অ্যাপে আপনাকে স্বাগত!" else "Welcome to Niljori Health!",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
-                                    color = Color(0xFF1B5E20)
+                                    color = Color(0xFF01579B)
                                )
                                 Text(
                                     text = if (isBengali) "রেজিস্ট্রেশন সম্পন্ন হয়েছে।" else "Registration completed successfully.",
                                     fontSize = 11.sp,
-                                    color = Color(0xFF2E7D32)
+                                    color = Color(0xFF0288D1)
                                 )
                             }
                         }

@@ -214,15 +214,15 @@ fun HealthPreferencesScreen(
                             text = if (isBengali) "স্মার্ট ডায়েট ও স্বাস্থ্য সমন্বয়" else "Clinical Nutrition Adjuster",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
-                            color = Color(0xFF1B5E20)
+                            color = Color(0xFF01579B)
                         )
                         Text(
                             text = if (isBengali) 
                                 "এখানে আপনার মেডিকেল কন্ডিশন এবং পছন্দের রন্ধনশৈলী নির্বাচন করুন। আমাদের স্মার্ট জেনারেটর আপনার খাদ্যতালিকায় এগুলোকে সর্বোচ্চ গুরুত্ব দিয়ে সংগতিপূর্ণ ডায়েট প্ল্যান সাজাবে।" 
                             else 
-                                "Choose health needs and preferred flavors. ANEXSOPZ's recipe engine dynamically formats wellness plans conforming to chosen criteria.",
+                                "Choose health needs and preferred flavors. Niljori's recipe engine dynamically formats wellness plans conforming to chosen criteria.",
                             fontSize = 11.sp,
-                            color = Color(0xFF2E7D32),
+                            color = Color(0xFF0288D1),
                             lineHeight = 15.sp
                         )
                     }

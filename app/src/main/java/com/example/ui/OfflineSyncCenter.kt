@@ -109,9 +109,9 @@ fun OfflineSyncCenter(
                 IconButton(
                     onClick = {
                         val shareText = if (isBengali) {
-                            "আমি সুভেছা (Suvecha Wellness) মোবাইল অ্যাপের নিরাপদ লোকাল ডিরেক্টরি এবং ১টি সিঙ্ক প্রোফাইলের ব্যাকআপ ভ্যালিড করেছি! ডাটা সম্পূর্ণ সুরক্ষিত ও অফলাইনে কাজ করে।"
+                            "আমি নীলজরি (Niljori Health) মোবাইল অ্যাপের নিরাপদ লোকাল ডিরেক্টরি এবং ১টি সিঙ্ক প্রোফাইলের ব্যাকআপ ভ্যালিড করেছি! ডাটা সম্পূর্ণ সুরক্ষিত ও অফলাইনে কাজ করে।"
                         } else {
-                            "My diet charts, recipe logs and hydration routines are securely saved offline and synchronized safely with Suvecha Wellness. Keep your data footprints minimal!"
+                            "My diet charts, recipe logs and hydration routines are securely saved offline and synchronized safely with Niljori Health. Keep your data footprints minimal!"
                         }
                         SharingUtils.shareText(context, shareText, if (isBengali) "সিঙ্ক স্ট্যাটাস শেয়ার করুন" else "Share Backup Security Status")
                     },

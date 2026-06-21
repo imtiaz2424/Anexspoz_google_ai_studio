@@ -4,7 +4,11 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -1429,4 +1433,62 @@ fun NiljoriQuickLogDialog(
             }
         }
     )
+}
+
+@Composable
+fun FlowingWaterAnimationWrapper(
+    modifier: Modifier = Modifier,
+    delayMillis: Int = 0,
+    content: @Composable () -> Unit
+) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (delayMillis > 0) {
+            kotlinx.coroutines.delay(delayMillis.toLong())
+        }
+        visible = true
+    }
+    
+    val slideOffset = remember { Animatable(45f) }
+    val swayOffset = remember { Animatable(0f) }
+    val alphaAnim = remember { Animatable(0f) }
+    val coroutineScope = rememberCoroutineScope()
+    
+    LaunchedEffect(visible) {
+        if (visible) {
+            coroutineScope.launch {
+                alphaAnim.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = 850, easing = EaseOutCubic)
+                )
+            }
+            coroutineScope.launch {
+                slideOffset.animateTo(
+                    targetValue = 0f,
+                    animationSpec = tween(durationMillis = 850, easing = EaseOutCubic)
+                )
+            }
+            coroutineScope.launch {
+                swayOffset.animateTo(
+                    targetValue = 6f,
+                    animationSpec = tween(durationMillis = 400, easing = EaseOutSine)
+                )
+                swayOffset.animateTo(
+                    targetValue = 0f,
+                    animationSpec = tween(durationMillis = 450, easing = EaseInOutSine)
+                )
+            }
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .graphicsLayer {
+                alpha = alphaAnim.value
+                translationY = slideOffset.value
+                translationX = swayOffset.value
+            }
+    ) {
+        content()
+    }
 }

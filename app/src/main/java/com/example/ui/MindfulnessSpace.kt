@@ -160,9 +160,9 @@ fun MindfulnessSpace(
                 IconButton(
                     onClick = {
                         val shareText = if (isBengali) {
-                            "আমি সুভেছা (Suvecha) অ্যাপের মাইন্ডফুলনেস স্টুডিওতে শ্বাস ব্যায়াম সম্পন্ন করেছি! আমার মানসিক শান্তি সূচক ১০০% চার্জড।"
+                            "আমি নীলজরি (Niljori) অ্যাপের মাইন্ডফুলনেস স্টুডিওতে শ্বাস ব্যায়াম সম্পন্ন করেছি! আমার মানসিক শান্তি সূচক ১০০% চার্জড।"
                         } else {
-                            "Just finished a calming breathing mindfulness flow in Suvecha Wellness Zen Space! 🧘 Breathe deep and remain positive."
+                            "Just finished a calming breathing mindfulness flow in Niljori Wellness Zen Space! 🧘 Breathe deep and remain positive."
                         }
                         SharingUtils.shareText(context, shareText, "Share Mindfulness Flow")
                     },
