@@ -292,6 +292,26 @@ fun ExploreTab(
     var selectedRecipe by remember { mutableStateOf<RecipeEntity?>(null) }
     var recipeSearchQuery by remember { mutableStateOf("") }
     var activeSubTool by remember { mutableStateOf<String?>(null) } // "restaurant" or "sos" or null
+    var showCommunityHub by remember { mutableStateOf(false) }
+    var showEmergencyHelp by remember { mutableStateOf(false) }
+
+    if (showCommunityHub) {
+        CommunityHubScreen(
+            isBengali = isBengali,
+            viewModel = viewModel,
+            onBack = { showCommunityHub = false }
+        )
+        return
+    }
+
+    if (showEmergencyHelp) {
+        EmergencyHelpScreen(
+            isBengali = isBengali,
+            viewModel = viewModel,
+            onBack = { showEmergencyHelp = false }
+        )
+        return
+    }
 
     // Voice recognition recipe launcher
     val voiceInputLauncher = rememberLauncherForActivityResult(
@@ -356,6 +376,17 @@ fun ExploreTab(
                 }
             }
         }
+
+        // --- VISUAL UI FLOW DIAGRAM HUB (Requested) ---
+        InteractiveVisualFlowDiagram(
+            isBengali = isBengali,
+            onNavigateToTab = onNavigateToTab,
+            onOpenCommunityHub = { showCommunityHub = true },
+            onOpenEmergencyHelp = { showEmergencyHelp = true },
+            onOpenSelectMood = { onNavigateToTab(0) },
+            onOpenFindRestaurants = { activeSubTool = "restaurant" },
+            modifier = Modifier.fillMaxWidth()
+        )
 
         // --- CORE EXPLORE SERVICES GRID ---
         Row(
@@ -476,6 +507,75 @@ fun ExploreTab(
                         textAlign = TextAlign.Center,
                         lineHeight = 10.sp
                     )
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Community Hub Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE0F7FA)),
+                border = BorderStroke(1.dp, Color(0xFF80DEEA)),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { showCommunityHub = true }
+                    .testTag("explore_community_hub_btn")
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("👥", fontSize = 24.sp)
+                    Column {
+                        Text(
+                            text = if (isBengali) "কমিউনিটি হাব" else "Community Hub",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            color = Color(0xFF006064)
+                        )
+                        Text(
+                            text = if (isBengali) "ফিড ও গ্রুপ আলোচনা" else "Feed & group chats",
+                            fontSize = 8.5.sp,
+                            color = Color(0xFF00838F)
+                        )
+                    }
+                }
+            }
+
+            // Emergency SOS Center Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                border = BorderStroke(1.dp, Color(0xFFFFCDD2)),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { showEmergencyHelp = true }
+                    .testTag("explore_emergency_help_btn")
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("🚨", fontSize = 24.sp)
+                    Column {
+                        Text(
+                            text = if (isBengali) "জরুরি সহায়তা" else "Emergency SOS",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            color = Color(0xFFC62828)
+                        )
+                        Text(
+                            text = if (isBengali) "হেলপলাইন ও কল ট্রিগার" else "Speed dial helplines",
+                            fontSize = 8.5.sp,
+                            color = Color(0xFFD32F2F)
+                        )
+                    }
                 }
             }
         }
