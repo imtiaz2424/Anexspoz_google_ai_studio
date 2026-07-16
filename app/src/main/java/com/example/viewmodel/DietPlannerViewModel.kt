@@ -234,9 +234,20 @@ class DietPlannerViewModel(
         sharedPrefs.edit().putString("home_card_order_pref", value).apply()
     }
 
+    // Units Preference: "Metric" or "Imperial"
+    private val _unitPref = MutableStateFlow("Metric")
+    val unitPref: StateFlow<String> = _unitPref.asStateFlow()
+
+    fun saveUnitPref(value: String) {
+        _unitPref.value = value
+        val sharedPrefs = context.getSharedPreferences("niljori_settings", Context.MODE_PRIVATE)
+        sharedPrefs.edit().putString("unit_pref", value).apply()
+    }
+
     init {
         val sharedPrefs = context.getSharedPreferences("niljori_settings", Context.MODE_PRIVATE)
         _isBengali.value = sharedPrefs.getBoolean("is_bengali", false)
+        _unitPref.value = sharedPrefs.getString("unit_pref", "Metric") ?: "Metric"
         _locationPref.value = sharedPrefs.getString("location_pref", "Dhaka, Bangladesh") ?: "Dhaka, Bangladesh"
         _fontSizePref.value = sharedPrefs.getString("font_size_pref", "Medium") ?: "Medium"
         _keepScreenOnPref.value = sharedPrefs.getBoolean("keep_screen_on_pref", false)
@@ -356,6 +367,13 @@ class DietPlannerViewModel(
             repository.saveWeightLog(weight, getTodayDateString())
 
             _eventMessage.value = "পেশাদার প্রোফাইল সফলভাবে আপডেট করা হয়েছে! (User Profile updated successfully!)"
+        }
+    }
+
+    fun saveUserProfile(profile: UserProfileEntity) {
+        viewModelScope.launch {
+            repository.saveUserProfile(profile)
+            _eventMessage.value = if (_isBengali.value) "প্রোফাইল তথ্য সফলভাবে সেভ হয়েছে!" else "Profile updated successfully!"
         }
     }
 
@@ -799,6 +817,25 @@ class DietPlannerViewModel(
     fun logout() {
         authManager.signOut()
         _eventMessage.value = if (_isBengali.value) "সফলভাবে লগআউট সম্পূর্ণ হয়েছে!" else "Logged out successfully!"
+    }
+
+    fun changePassword(newPin: String, onResult: (Boolean, String?) -> Unit) {
+        authManager.changePassword(newPin, onResult)
+    }
+
+    fun deleteAccountAndWipeData(onResult: (Boolean, String?) -> Unit) {
+        val uid = currentUserId.value
+        viewModelScope.launch {
+            if (uid.isNotEmpty()) {
+                repository.wipeUserAccountData(uid)
+            }
+            authManager.deleteAccount { success, err ->
+                if (success) {
+                    _eventMessage.value = if (_isBengali.value) "অ্যাকাউন্ট ও সমস্ত ডাটা সফলভাবে মুছে ফেলা হয়েছে!" else "Account and all data deleted successfully!"
+                }
+                onResult(success, err)
+            }
+        }
     }
 
     fun addFoodLog(name: String, calories: Int, protein: Double = 0.0, carbs: Double = 0.0, fat: Double = 0.0) {

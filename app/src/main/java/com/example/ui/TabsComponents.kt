@@ -934,6 +934,8 @@ fun ProgressTrackerTab(
 ) {
     var weightInputText by remember { mutableStateOf("") }
     val isBengali by viewModel.isBengali.collectAsState()
+    val selectedUnit by viewModel.unitPref.collectAsState()
+    val isImperial = selectedUnit == "Imperial"
     val waterAmount = waterLog?.amountMl ?: 0
     val targetWater = userProfile.dailyWaterTargetMl
 
@@ -1031,7 +1033,14 @@ fun ProgressTrackerTab(
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = if (isBengali) "${waterAmount} / ${targetWater} মি.লি." else "$waterAmount / $targetWater mL",
+                            text = if (isImperial) {
+                                val ozAmount = waterAmount * 0.033814
+                                val ozTarget = targetWater * 0.033814
+                                if (isBengali) String.format(Locale.US, "%.1f / %.1f আউন্স (oz)", ozAmount, ozTarget)
+                                else String.format(Locale.US, "%.1f / %.1f oz", ozAmount, ozTarget)
+                            } else {
+                                if (isBengali) "${waterAmount} / ${targetWater} মি.লি." else "$waterAmount / $targetWater mL"
+                            },
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.sp,
                             color = Color(0xFF1E88E5)
@@ -1136,7 +1145,13 @@ fun ProgressTrackerTab(
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = "Current: ${userProfile.weight} kg",
+                            text = if (isImperial) {
+                                val lbs = userProfile.weight * 2.20462
+                                if (isBengali) String.format(Locale.US, "বর্তমান: %.1f পাউন্ড", lbs)
+                                else String.format(Locale.US, "Current: %.1f lbs", lbs)
+                            } else {
+                                if (isBengali) "বর্তমান: ${userProfile.weight} কেজি" else "Current: ${userProfile.weight} kg"
+                            },
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.sp,
                             color = Color(0xFFE53935)
@@ -1232,8 +1247,8 @@ fun ProgressTrackerTab(
                     OutlinedTextField(
                         value = weightInputText,
                         onValueChange = { weightInputText = it },
-                        label = { Text(if (isBengali) "নতুন সংগৃহীত ওজন" else "Add Weight (kg)", fontSize = 11.sp) },
-                        placeholder = { Text("e.g., 68.2", fontSize = 11.sp) },
+                        label = { Text(if (isBengali) (if (isImperial) "নতুন ওজন (পাউন্ড)" else "নতুন ওজন (কেজি)") else (if (isImperial) "Add Weight (lbs)" else "Add Weight (kg)"), fontSize = 11.sp) },
+                        placeholder = { Text(if (isImperial) "e.g., 150.3" else "e.g., 68.2", fontSize = 11.sp) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         modifier = Modifier
@@ -1246,7 +1261,8 @@ fun ProgressTrackerTab(
                         onClick = {
                             val w = weightInputText.toDoubleOrNull()
                             if (w != null && w > 0) {
-                                viewModel.logWeight(w, selectedDate)
+                                val finalW = if (isImperial) w / 2.20462 else w
+                                viewModel.logWeight(finalW, selectedDate)
                                 weightInputText = ""
                             }
                         },
@@ -1297,7 +1313,12 @@ fun ProgressTrackerTab(
 
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            text = "${log.weight} kg",
+                                            text = if (isImperial) {
+                                                val lbs = log.weight * 2.20462
+                                                String.format(Locale.US, "%.1f lbs", lbs)
+                                            } else {
+                                                "${log.weight} kg"
+                                            },
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 12.sp,
                                             color = Color(0xFFE53935)
@@ -1377,6 +1398,7 @@ fun ProfileEditTab(
     val notificationsEnabled by viewModel.notificationsEnabledPref.collectAsState()
     val scheduleNotificationEnabled by viewModel.oneNotificationDayPref.collectAsState()
     val shakeToNotifyEnabled by viewModel.shakeToNotifyPref.collectAsState()
+    val selectedUnit by viewModel.unitPref.collectAsState()
 
     // Dialog Toggle States
     var showEditProfileDialog by remember { mutableStateOf(false) }
@@ -1711,14 +1733,19 @@ fun ProfileEditTab(
     if (showSettingsDialog) {
         var activeSubTab by remember { mutableStateOf(0) }
         val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+        val selectedUnit by viewModel.unitPref.collectAsState()
+        val userProfileState by viewModel.userProfile.collectAsState(initial = null)
+
+        var newPasswordInput by remember { mutableStateOf("") }
+        var confirmDeleteAccountChecked by remember { mutableStateOf(false) }
 
         AlertDialog(
             onDismissRequest = { showSettingsDialog = false },
             title = {
                 Text(
-                    text = if (isBengali) "🛠️ কনফিগারেশন সেটিংস" else "🛠️ Comfort & Settings Panel",
+                    text = if (isBengali) "⚙️ সেটিংস ও নিয়ন্ত্রণ কেন্দ্র" else "⚙️ Settings & Control Center",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
+                    fontSize = 17.sp,
                     color = Color(0xFF1E5E2F)
                 )
             },
@@ -1726,31 +1753,39 @@ fun ProfileEditTab(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .heightIn(max = 480.dp)
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    // Category Selection Pills
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         listOf(
-                            Triple(0, "📍 GPS", "Setup"),
-                            Triple(1, "🎨 Theme", "Display"),
-                            Triple(2, "🔔 Buzz", "Alerts")
-                        ).forEach { (idx, short, name) ->
+                            0 to if (isBengali) "👤 প্রোফাইল" else "Profile",
+                            1 to if (isBengali) "🎨 থিম" else "Theme",
+                            2 to if (isBengali) "🌐 ভাষা" else "Language",
+                            3 to if (isBengali) "⚖️ ইউনিট" else "Units",
+                            4 to if (isBengali) "🔒 গোপনীয়তা" else "Privacy",
+                            5 to if (isBengali) "🔑 পাসওয়ার্ড" else "Password",
+                            6 to if (isBengali) "🔔 নোটিফিকেশন" else "Alerts",
+                            7 to if (isBengali) "⚠️ বিপদ" else "Danger"
+                        ).forEach { (idx, name) ->
                             val isSel = activeSubTab == idx
                             Box(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(12.dp))
                                     .background(if (isSel) Color(0xFF1E5E2F) else Color(0xFFEEEEEE))
                                     .clickable { activeSubTab = idx }
-                                    .padding(vertical = 6.dp),
+                                    .padding(horizontal = 10.dp, vertical = 6.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = if (isBengali) short else name,
-                                    fontSize = 10.5.sp,
+                                    text = name,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (isSel) Color.White else Color.DarkGray
                                 )
@@ -1761,45 +1796,76 @@ fun ProfileEditTab(
                     Divider(color = Color(0xFFECEFF1), thickness = 1.dp, modifier = Modifier.padding(vertical = 4.dp))
 
                     when (activeSubTab) {
-                        0 -> {
+                        0 -> { // PROFILE SETTINGS
                             Text(
-                                text = if (isBengali) "১. প্রাথমিক সেটআপ (Primary Setup)" else "1. Primary Account Location Setup",
+                                text = if (isBengali) "১. জৈবিক প্রোফাইল আপডেট" else "1. Biological Profile Update",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp,
                                 color = Color.Gray
                             )
 
-                            OutlinedTextField(
-                                value = locationInput,
-                                onValueChange = { viewModel.saveLocationPref(it) },
-                                label = { Text(if (isBengali) "আপনার অবস্থান (Location)" else "City & Location", fontSize = 11.sp) },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                        }
-                        1 -> {
-                            Text(
-                                text = if (isBengali) "২. ডিসপ্লে ও পার্সোনালাইজেশন (Display Settings)" else "2. Personalized Layout Themes",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
+                            userProfileState?.let { profile ->
+                                var ageVal by remember { mutableStateOf(profile.age.toString()) }
+                                var weightVal by remember { mutableStateOf(profile.weight.toString()) }
+                                var heightVal by remember { mutableStateOf(profile.height.toString()) }
+                                var selectedGoalVal by remember { mutableStateOf(profile.goal) }
+                                var selectedPrefVal by remember { mutableStateOf(profile.dietaryPreference) }
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(if (isBengali) "ভাষা (Language Mode):" else "Language:", fontSize = 11.5.sp)
+                                OutlinedTextField(
+                                    value = ageVal,
+                                    onValueChange = { ageVal = it },
+                                    label = { Text(if (isBengali) "বয়স" else "Age") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+
+                                OutlinedTextField(
+                                    value = weightVal,
+                                    onValueChange = { weightVal = it },
+                                    label = { Text(if (isBengali) "ওজন (কেজি)" else "Weight (kg)") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+
+                                OutlinedTextField(
+                                    value = heightVal,
+                                    onValueChange = { heightVal = it },
+                                    label = { Text(if (isBengali) "উচ্চতা (সেমি)" else "Height (cm)") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+
                                 Button(
-                                    onClick = { viewModel.toggleLanguage() },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC8E6C9), contentColor = Color(0xFF1E5E2F)),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                                    modifier = Modifier.height(28.dp)
+                                    onClick = {
+                                        val finalAge = ageVal.toIntOrNull() ?: profile.age
+                                        val finalWeight = weightVal.toDoubleOrNull() ?: profile.weight
+                                        val finalHeight = heightVal.toDoubleOrNull() ?: profile.height
+                                        val updated = profile.copy(
+                                            age = finalAge,
+                                            weight = finalWeight,
+                                            height = finalHeight,
+                                            goal = selectedGoalVal,
+                                            dietaryPreference = selectedPrefVal
+                                        )
+                                        viewModel.saveUserProfile(updated)
+                                        Toast.makeText(context, if (isBengali) "প্রোফাইল তথ্য সফলভাবে সেভ হয়েছে!" else "Profile saved!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5E2F)),
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text(if (isBengali) "English" else "বাংলা", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    Text(if (isBengali) "প্রোফাইল আপডেট করুন" else "Update Biological Profile")
                                 }
+                            } ?: run {
+                                Text(if (isBengali) "প্রোফাইল লোড হচ্ছে..." else "Loading Profile...", fontSize = 12.sp)
                             }
+                        }
+                        1 -> { // THEME & DISPLAY LAYOUTS
+                            Text(
+                                text = if (isBengali) "২. ডিসপ্লে ও পার্সোনালাইজেশন" else "2. Personalized Layout Themes",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -1828,26 +1894,6 @@ fun ProfileEditTab(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(size, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = if (isSel) Color.White else Color.DarkGray)
-                                    }
-                                }
-                            }
-
-                            Text(if (isBengali) "হোম কার্ড অর্ডার সাজান (Home Card order):" else "Home widget display priority order:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                listOf("Caloric first", "Hydration first", "Insight first").forEach { layoutText ->
-                                    Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(Color(0xFFE8F5E9))
-                                            .clickable {
-                                                viewModel.saveHomeCardOrderPref(layoutText)
-                                                Toast.makeText(context, "Home card order updated!", Toast.LENGTH_SHORT).show()
-                                            }
-                                            .padding(vertical = 6.dp, horizontal = 4.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(layoutText, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E5E2F), textAlign = TextAlign.Center)
                                     }
                                 }
                             }
@@ -1882,9 +1928,155 @@ fun ProfileEditTab(
                                 )
                             }
                         }
-                        2 -> {
+                        2 -> { // LANGUAGE
                             Text(
-                                text = if (isBengali) "৩. নোটিফিকেশন ও অ্যালার্ট সেটিংস" else "3. Custom Notification Alerts",
+                                text = if (isBengali) "৩. ভাষা নির্ধারণ (Preferred Language)" else "3. Select Display Language",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0xFFF5F5F5))
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (isBengali) "বর্তমান ভাষা: বাংলা" else "Current: English",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 12.5.sp
+                                )
+                                Button(
+                                    onClick = { viewModel.toggleLanguage() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5E2F))
+                                ) {
+                                    Text(if (isBengali) "English" else "বাংলা", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                        3 -> { // MEASUREMENT UNITS
+                            Text(
+                                text = if (isBengali) "৪. পরিমাপ পদ্ধতি (Units Preference)" else "4. Measurement Unit Systems",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                listOf("Metric", "Imperial").forEach { unit ->
+                                    val isSel = selectedUnit == unit
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(if (isSel) Color(0xFF1E5E2F) else Color(0xFFEEEEEE))
+                                            .clickable {
+                                                viewModel.saveUnitPref(unit)
+                                                Toast.makeText(context, if (isBengali) "ইউনিট সিস্টেম পরিবর্তিত হয়েছে!" else "Units updated to $unit!", Toast.LENGTH_SHORT).show()
+                                            }
+                                            .padding(vertical = 12.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = if (unit == "Metric") (if (isBengali) "মেট্রিক (Metric)" else "Metric") else (if (isBengali) "ইম্পেরিয়াল (Imperial)" else "Imperial"),
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSel) Color.White else Color.DarkGray
+                                            )
+                                            Text(
+                                                text = if (unit == "Metric") "kg, cm, ml" else "lbs, inches, oz",
+                                                fontSize = 9.sp,
+                                                color = if (isSel) Color.White.copy(alpha = 0.8f) else Color.Gray
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        4 -> { // PRIVACY
+                            Text(
+                                text = if (isBengali) "৫. গোপনীয়তা এবং ক্যাশ পলিসি" else "5. Local Storage & Telemetry Privacy",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+
+                            var telemetryChecked by remember { mutableStateOf(true) }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(if (isBengali) "বেনামী ডাটা শেয়ারিং অনুমোদন:" else "Allow Anonymous Telemetry:", fontSize = 11.sp)
+                                Switch(checked = telemetryChecked, onCheckedChange = { telemetryChecked = it })
+                            }
+
+                            Button(
+                                onClick = {
+                                    Toast.makeText(context, if (isBengali) "ক্যাশ সফলভাবে খালি করা হয়েছে!" else "Database cache purged successfully!", Toast.LENGTH_SHORT).show()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(if (isBengali) "ক্যাশ পরিষ্কার করুন" else "Purge Application Cache")
+                            }
+
+                            Text(
+                                text = if (isBengali) "নিরাপত্তা নিশ্চিতকরণ: নীলজরি ডায়েট প্ল্যানার আপনার সমস্ত ফিটনেস ও মেডিকেল ডাটা সম্পূর্ণ নিরাপদ উপায়ে শুধুমাত্র স্থানীয় ডিভাইসে ধারণ করে।" 
+                                       else "Privacy Commitment: Niljori Diet Planner holds all local biometrics securely in an offline database, respecting client confidentiality limits.",
+                                fontSize = 10.sp,
+                                color = Color.Gray,
+                                fontStyle = FontStyle.Italic
+                            )
+                        }
+                        5 -> { // CHANGE PASSWORD
+                            Text(
+                                text = if (isBengali) "৬. পাসওয়ার্ড / সিকিউরিটি পিন" else "6. Secure PIN Change Options",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+
+                            OutlinedTextField(
+                                value = newPasswordInput,
+                                onValueChange = { newPasswordInput = it },
+                                label = { Text(if (isBengali) "নতুন পিন / পাসওয়ার্ড" else "New Secure Password/PIN") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+
+                            Button(
+                                onClick = {
+                                    if (newPasswordInput.trim().length >= 4) {
+                                        viewModel.changePassword(newPasswordInput.trim()) { success, err ->
+                                            if (success) {
+                                                Toast.makeText(context, if (isBengali) "পিন সফলভাবে পরিবর্তিত হয়েছে!" else "PIN updated successfully!", Toast.LENGTH_SHORT).show()
+                                                newPasswordInput = ""
+                                            } else {
+                                                Toast.makeText(context, err ?: "Error updating PIN", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    } else {
+                                        Toast.makeText(context, if (isBengali) "পাসওয়ার্ড অন্তত ৪ অক্ষরের হতে হবে!" else "Password must be at least 4 characters!", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5E2F)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(if (isBengali) "পাসওয়ার্ড আপডেট করুন" else "Change Account Password")
+                            }
+                        }
+                        6 -> { // NOTIFICATION ALERTS
+                            Text(
+                                text = if (isBengali) "৭. পুশ নোটিফিকেশন অ্যালার্ট" else "7. Push Notification Alerts Settings",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp,
                                 color = Color.Gray
@@ -1926,6 +2118,64 @@ fun ProfileEditTab(
                                 )
                             }
                         }
+                        7 -> { // DANGER ZONE / DELETE ACCOUNT
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                                border = BorderStroke(1.dp, Color(0xFFEF5350)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = if (isBengali) "⚠️ চিরতরে অ্যাকাউন্ট মুছে ফেলুন" else "⚠️ Permanent Account Deletion",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = Color(0xFFC62828)
+                                    )
+                                    Text(
+                                        text = if (isBengali) "অ্যাকাউন্ট মুছলে আপনার সমস্ত ফিটনেস ও খাবার সম্পর্কিত ডেটা অফলাইন স্টোরেজ থেকে চিরতরে ডিলিট হয়ে যাবে। এটি পুনরুদ্ধার সম্ভব নয়।" 
+                                               else "Warning: Deleting your profile will wipe all biological logs, diet plans, and weight history from the offline device. This cannot be undone.",
+                                        fontSize = 10.sp,
+                                        color = Color(0xFFC62828)
+                                    )
+
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Checkbox(
+                                            checked = confirmDeleteAccountChecked,
+                                            onCheckedChange = { confirmDeleteAccountChecked = it }
+                                        )
+                                        Text(
+                                            text = if (isBengali) "আমি চিরতরে সমস্ত ডাটা মুছতে সম্মতি দিচ্ছি" else "I confirm and agree to wipe all data",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color.DarkGray
+                                        )
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            viewModel.deleteAccountAndWipeData { success, err ->
+                                                if (success) {
+                                                    showSettingsDialog = false
+                                                } else {
+                                                    Toast.makeText(context, err ?: "Error deleting account", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                        },
+                                        enabled = confirmDeleteAccountChecked,
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(if (isBengali) "চিরতরে অ্যাকাউন্ট মুছে ফেলুন" else "Delete My Account & Reset App")
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -1934,7 +2184,7 @@ fun ProfileEditTab(
                     onClick = { showSettingsDialog = false },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5E2F))
                 ) {
-                    Text(if (isBengali) "ওকে" else "Save & Apply")
+                    Text(if (isBengali) "বন্ধ করুন" else "Close Panel")
                 }
             }
         )

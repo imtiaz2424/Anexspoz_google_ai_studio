@@ -440,4 +440,16 @@ class DietPlannerRepository(private val dao: DietPlannerDao) {
             progressSuggestion = "Check your BMI and log weight weekly. Target BMI range is 18.5 - 24.9."
         )
     }
+
+    suspend fun wipeUserAccountData(userId: String) = withContext(Dispatchers.IO) {
+        dao.deleteUserProfile(userId)
+        dao.deleteFoodLogsForUser(userId)
+        dao.deleteMoodLogsForUser(userId)
+        dao.deleteAllExerciseLogs()
+        dao.deleteAllWaterLogs()
+        dao.deleteAllWeightLogs()
+        dao.deleteAllMealPlans()
+        dao.deleteAllReminders()
+        dao.deleteAllShoppingItems()
+    }
 }

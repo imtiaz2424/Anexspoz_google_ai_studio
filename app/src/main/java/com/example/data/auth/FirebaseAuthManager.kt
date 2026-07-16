@@ -86,4 +86,29 @@ class FirebaseAuthManager(private val context: Context) {
         val sessionPrefs = context.getSharedPreferences("niljori_auth_simulated", Context.MODE_PRIVATE)
         sessionPrefs.edit().clear().apply()
     }
+
+    fun changePassword(newPassword: String, onResult: (Boolean, String?) -> Unit) {
+        val user = _currentUser.value
+        if (user == null) {
+            onResult(false, "No active session")
+            return
+        }
+        val email = user.email
+        val sharedPrefs = context.getSharedPreferences("niljori_auth_simulated_db", Context.MODE_PRIVATE)
+        sharedPrefs.edit().putString(email, newPassword).apply()
+        onResult(true, null)
+    }
+
+    fun deleteAccount(onResult: (Boolean, String?) -> Unit) {
+        val user = _currentUser.value
+        if (user == null) {
+            onResult(false, "No active session")
+            return
+        }
+        val email = user.email
+        val sharedPrefs = context.getSharedPreferences("niljori_auth_simulated_db", Context.MODE_PRIVATE)
+        sharedPrefs.edit().remove(email).apply()
+        signOut()
+        onResult(true, null)
+    }
 }

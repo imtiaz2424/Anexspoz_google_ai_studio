@@ -147,4 +147,31 @@ interface DietPlannerDao {
 
     @Query("DELETE FROM mood_logs WHERE id = :id")
     suspend fun deleteMoodLog(id: Int)
+
+    @Query("DELETE FROM user_profile WHERE id = :userId")
+    suspend fun deleteUserProfile(userId: String)
+
+    @Query("DELETE FROM food_logs WHERE userId = :userId")
+    suspend fun deleteFoodLogsForUser(userId: String)
+
+    @Query("DELETE FROM mood_logs WHERE userId = :userId")
+    suspend fun deleteMoodLogsForUser(userId: String)
+
+    @Query("DELETE FROM exercise_logs")
+    suspend fun deleteAllExerciseLogs()
+
+    @Query("DELETE FROM water_logs")
+    suspend fun deleteAllWaterLogs()
+
+    @Query("DELETE FROM weight_logs")
+    suspend fun deleteAllWeightLogs()
+
+    @Query("DELETE FROM meal_plans")
+    suspend fun deleteAllMealPlans()
+
+    @Query("DELETE FROM meal_reminders")
+    suspend fun deleteAllReminders()
+
+    @Query("DELETE FROM shopping_items")
+    suspend fun deleteAllShoppingItems()
 }
