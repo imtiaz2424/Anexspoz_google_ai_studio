@@ -824,7 +824,25 @@ fun ToolsTab(
                 onClick = { activeSection = "workout" }
             )
 
-            // Card 14: User preferences persistence status (Completes symmetry nicely)
+            // Card 14: Intermittent Fasting Tracker
+            DashboardGridCard(
+                title = if (isBengali) "উপবাস ট্র্যাকার" else "Fasting Tracker",
+                subtitle = if (isBengali) "রিয়েল-টাইম ফাস্টিং ও অটোফ্যাজি" else "Real-time fasting timers & logs",
+                icon = Icons.Default.HourglassEmpty,
+                isActive = activeSection == "fasting",
+                badge = if (isBengali) "উপবাস" else "Fast",
+                colorScheme = Color(0xFFFF8F00),
+                backgroundColor = Color(0xFFFFF3E0),
+                modifier = Modifier.weight(1f).testTag("grid_card_fasting"),
+                onClick = { activeSection = "fasting" }
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Card 15: User preferences persistence status
             val prefSub = if (isBengali) "ভাষা: ${if (isBengali) "বাংলা" else "EN"} | থিম: ${if (isDarkTheme) "ডার্ক" else "লাইট"}" else "Lang: ${if (isBengali) "বাংলা" else "EN"} | Theme: ${if (isDarkTheme) "Dark" else "Light"}"
             DashboardGridCard(
                 title = if (isBengali) "ব্যবহারকারী প্রেফারেন্স" else "User Preferences",
@@ -843,6 +861,44 @@ fun ToolsTab(
                         messageBn = msgBn,
                         actionEn = "OK",
                         actionBn = "ঠিক আছে",
+                        onAction = {}
+                    )
+                }
+            )
+
+            // Card 16: Active Health Tips
+            DashboardGridCard(
+                title = if (isBengali) "প্রাত্যহিক স্বাস্থ্য টিপস" else "Daily Health Tips",
+                subtitle = if (isBengali) "সুস্থ জীবনযাত্রার চমৎকার পরামর্শ" else "Get a quick wellness advisory tip",
+                icon = Icons.Default.Lightbulb,
+                isActive = false,
+                badge = if (isBengali) "টিপস" else "Tips",
+                colorScheme = Color(0xFF00897B),
+                backgroundColor = Color(0xFFE0F2F1),
+                modifier = Modifier.weight(1f).testTag("grid_card_health_tips"),
+                onClick = {
+                    val tipsEn = listOf(
+                        "Drink a glass of warm water with lemon every morning to jumpstart your metabolism 🍋",
+                        "Aim for at least 7-8 hours of deep, dark sleep to naturally balance your fullness hormones 😴",
+                        "Try taking 5 deep diaphragmatic breaths whenever you feel stressed or anxious 🧘",
+                        "Incorporate colorful vegetables to cover at least half of your meal plate for rich micronutrients 🥗",
+                        "Try to finish your dinner at least 3 hours before going to sleep to maximize cellular recovery 🌙",
+                        "A short 10-minute walk after lunch can significantly improve digestion and insulin levels 🚶"
+                    )
+                    val tipsBn = listOf(
+                        "মেটাবলিজম বাড়াতে প্রতিদিন সকালে এক গ্লাস কুসুম গরম লেবু পানি পান করুন 🍋",
+                        "ক্ষুধার হরমোন নিয়ন্ত্রণে রাখতে প্রতিদিন অন্তত ৭-৮ ঘণ্টা গভীর ও শান্ত ঘুম নিশ্চিত করুন 😴",
+                        "দুশ্চিন্তা লাগলেই ৫ বার পেট ফুলিয়ে গভীর শ্বাস গ্রহণ ও বর্জন করুন 🧘",
+                        "প্রয়োজনীয় পুষ্টি নিশ্চিত করতে খাবারের প্লেটের অন্তত অর্ধেক অংশ রঙিন শাকসবজি দিয়ে সাজান 🥗",
+                        "কোষের প্রাকৃতিক পুনর্গঠন ত্বরান্বিত করতে ঘুমানোর অন্তত ৩ ঘণ্টা আগে রাতের খাবার শেষ করুন 🌙",
+                        "দুপুরের খাবারের পর মাত্র ১০ মিনিটের হালকা হাঁটা আপনার হজম ও সুগার লেভেল নিয়ন্ত্রণে সাহায্য করে 🚶"
+                    )
+                    val randomIndex = (0 until tipsEn.size).random()
+                    viewModel.showInteractiveToast(
+                        messageEn = tipsEn[randomIndex],
+                        messageBn = tipsBn[randomIndex],
+                        actionEn = "Close",
+                        actionBn = "বন্ধ করুন",
                         onAction = {}
                     )
                 }
@@ -1404,6 +1460,17 @@ fun ToolsTab(
         ) {
             WorkoutLogger(
                 viewModel = viewModel,
+                isBengali = isBengali,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        AnimatedVisibility(
+            visible = activeSection == "fasting",
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            IntermittentFastingTracker(
                 isBengali = isBengali,
                 modifier = Modifier.fillMaxWidth()
             )
