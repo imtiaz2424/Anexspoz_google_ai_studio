@@ -1008,7 +1008,7 @@ fun MealPlanTab(
             if (selectedPlannerMode == 1) {
                 WeeklyMealPlannerView(userProfile = userProfile, isBengali = isBengali)
             } else if (selectedPlannerMode == 2) {
-                EmotionBasedPlannerView(userProfile = userProfile, isBengali = isBengali)
+                EmotionBasedPlannerView(viewModel = viewModel, userProfile = userProfile, isBengali = isBengali)
             } else if (selectedPlannerMode == 3) {
                 FitnessIntegratedPlannerView(viewModel = viewModel, userProfile = userProfile, isBengali = isBengali)
             } else {

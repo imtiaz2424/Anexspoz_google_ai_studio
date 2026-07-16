@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import com.example.data.model.UserProfileEntity
@@ -614,7 +615,7 @@ fun RecipeBasedPlannerView(userProfile: UserProfileEntity, isBengali: Boolean) {
 }
 
 @Composable
-fun EmotionBasedPlannerView(userProfile: UserProfileEntity, isBengali: Boolean) {
+fun EmotionBasedPlannerView(viewModel: DietPlannerViewModel, userProfile: UserProfileEntity, isBengali: Boolean) {
     var selectedEmotion by remember { mutableStateOf("happy") }
 
     val baseCal = userProfile.dailyCalorieTarget
@@ -800,6 +801,319 @@ fun EmotionBasedPlannerView(userProfile: UserProfileEntity, isBengali: Boolean) 
                     .padding(12.dp)
                     .fillMaxWidth()
             )
+        }
+
+        // Divider
+        Divider(
+            color = Color(0xFFECEFF1),
+            thickness = 1.dp,
+            modifier = Modifier.padding(vertical = 12.dp)
+        )
+
+        // Mood Tracking Section
+        Text(
+            text = if (isBengali) "📊 দৈনিক মনমেজাজ ট্র্যাকার ও প্রতিফলন ডায়েরি" else "📊 Daily Mood Tracker & Reflection Diary",
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+
+        Text(
+            text = if (isBengali) 
+                "আপনার আজকের দিনটি কেমন কেটেছে তা নথিভুক্ত করুন এবং একটি সংক্ষিপ্ত নোট লিখুন।" 
+                else "Log how your day felt and jot down a brief reflection note to save your daily state.",
+            fontSize = 11.sp,
+            color = Color.Gray,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        // Input state for new log
+        var trackingMood by remember { mutableStateOf("happy") }
+        var reflectionNote by remember { mutableStateOf("") }
+
+        // Mood Selector
+        Text(
+            text = if (isBengali) "আপনার আবেগ নির্বাচন করুন:" else "Select your current emotion:",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF37474F)
+        )
+
+        val trackerEmotions = listOf(
+            "happy" to "😊",
+            "stressed" to "😰",
+            "tired" to "😴",
+            "motivated" to "💪",
+            "sad" to "😢",
+            "calm" to "😌",
+            "excited" to "🤩"
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(trackerEmotions.size) { idx ->
+                val pair = trackerEmotions[idx]
+                val key = pair.first
+                val emoji = pair.second
+                val isSel = trackingMood == key
+                val label = when (key) {
+                    "happy" -> if (isBengali) "সুখী" else "Happy"
+                    "stressed" -> if (isBengali) "চিন্তিত" else "Stressed"
+                    "tired" -> if (isBengali) "ক্লান্ত" else "Tired"
+                    "motivated" -> if (isBengali) "উদ্যমী" else "Motivated"
+                    "sad" -> if (isBengali) "দুঃখিত" else "Sad"
+                    "calm" -> if (isBengali) "শান্ত" else "Calm"
+                    "excited" -> if (isBengali) "উত্তেজিত" else "Excited"
+                    else -> key
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (isSel) MaterialTheme.colorScheme.primaryContainer else Color(0xFFF5F7F6))
+                        .border(
+                            width = 1.5.dp,
+                            color = if (isSel) MaterialTheme.colorScheme.primary else Color(0xFFECEFF1),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .clickable { trackingMood = key }
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                        .testTag("mood_chip_$key"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = emoji, fontSize = 14.sp)
+                        Text(
+                            text = label,
+                            fontSize = 11.sp,
+                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSel) MaterialTheme.colorScheme.onPrimaryContainer else Color(0xFF37474F)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Reflection input TextField
+        OutlinedTextField(
+            value = reflectionNote,
+            onValueChange = { reflectionNote = it },
+            label = { 
+                Text(
+                    text = if (isBengali) "আজকের অনুভূতি ও প্রতিফলন নোট" else "Today's Reflection Note",
+                    fontSize = 12.sp
+                ) 
+            },
+            placeholder = { 
+                Text(
+                    text = if (isBengali) "আজকের দিনটি কেমন কাটল? কোনো বিশেষ ঘটনা?" else "How was your day? Any food or workout thoughts?",
+                    fontSize = 11.sp
+                ) 
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+                .testTag("mood_note_input"),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = Color(0xFFCFD8DC)
+            ),
+            singleLine = false,
+            maxLines = 4
+        )
+
+        // Save Mood Log Button
+        Button(
+            onClick = {
+                if (reflectionNote.isNotBlank()) {
+                    viewModel.saveMoodLog(
+                        mood = trackingMood,
+                        note = reflectionNote,
+                        food = "",
+                        activity = ""
+                    )
+                    reflectionNote = ""
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .testTag("save_mood_button"),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            ),
+            shape = RoundedCornerShape(12.dp),
+            enabled = reflectionNote.isNotBlank()
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("💾", fontSize = 14.sp)
+                Text(
+                    text = if (isBengali) "আবেগ ও ডায়েরি নোট সংরক্ষণ করুন" else "Save Mood & Reflection Log",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp
+                )
+            }
+        }
+
+        // Mood History / Logs Display
+        Text(
+            text = if (isBengali) "📜 আপনার অনুভূতির ইতিহাস" else "📜 Your Reflection History",
+            fontWeight = FontWeight.Bold,
+            fontSize = 13.sp,
+            color = Color(0xFF37474F),
+            modifier = Modifier.padding(top = 10.dp)
+        )
+
+        val moodLogs by viewModel.currentMoodLogs.collectAsState()
+
+        if (moodLogs.isEmpty()) {
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F7F6)),
+                border = BorderStroke(1.dp, Color(0xFFECEFF1)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier.padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (isBengali) 
+                            "এখনো কোনো ডায়েরি এন্ট্রি নেই। ওপর থেকে আপনার আবেগ নির্বাচন করে প্রথম নোটটি লিখুন!" 
+                            else "No reflections recorded yet. Select an emotion above and write a reflection note to log your first entry!",
+                        fontSize = 11.sp,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        } else {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                moodLogs.forEach { log ->
+                    val moodColor = when (log.mood.lowercase()) {
+                        "happy" -> Color(0xFFFFFDE7) // soft yellow
+                        "stressed" -> Color(0xFFFFEBEE) // soft red
+                        "tired" -> Color(0xFFECEFF1) // soft grey
+                        "motivated" -> Color(0xFFE8F5E9) // soft green
+                        "sad" -> Color(0xFFE3F2FD) // soft blue
+                        "calm" -> Color(0xFFF3E5F5) // soft purple
+                        "excited" -> Color(0xFFFFF3E0) // soft orange
+                        else -> Color(0xFFF5F7F6)
+                    }
+
+                    val moodBorderColor = when (log.mood.lowercase()) {
+                        "happy" -> Color(0xFFFFF59D)
+                        "stressed" -> Color(0xFFFFCDD2)
+                        "tired" -> Color(0xFFCFD8DC)
+                        "motivated" -> Color(0xFFC8E6C9)
+                        "sad" -> Color(0xFF90CAF9)
+                        "calm" -> Color(0xFFE1BEE7)
+                        "excited" -> Color(0xFFFFCC80)
+                        else -> Color(0xFFECEFF1)
+                    }
+
+                    val emoji = when (log.mood.lowercase()) {
+                        "happy" -> "😊"
+                        "stressed" -> "😰"
+                        "tired" -> "😴"
+                        "motivated" -> "💪"
+                        "sad" -> "😢"
+                        "calm" -> "😌"
+                        "excited" -> "🤩"
+                        else -> "😐"
+                    }
+
+                    val label = when (log.mood.lowercase()) {
+                        "happy" -> if (isBengali) "সুখী" else "Happy"
+                        "stressed" -> if (isBengali) "চিন্তিত" else "Stressed"
+                        "tired" -> if (isBengali) "ক্লান্ত" else "Tired"
+                        "motivated" -> if (isBengali) "উদ্যমী" else "Motivated"
+                        "sad" -> if (isBengali) "দুঃখিত" else "Sad"
+                        "calm" -> if (isBengali) "শান্ত" else "Calm"
+                        "excited" -> if (isBengali) "উত্তেজিত" else "Excited"
+                        else -> log.mood
+                    }
+
+                    val formattedDate = remember(log.timestamp) {
+                        try {
+                            val sdf = java.text.SimpleDateFormat("MMM dd, yyyy - hh:mm a", java.util.Locale.getDefault())
+                            sdf.format(java.util.Date(log.timestamp))
+                        } catch (e: Exception) {
+                            log.date
+                        }
+                    }
+
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = moodColor),
+                        border = BorderStroke(1.dp, moodBorderColor),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(text = emoji, fontSize = 16.sp)
+                                    Text(
+                                        text = label,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF37474F)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = formattedDate,
+                                        fontSize = 9.sp,
+                                        color = Color.Gray
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = log.note,
+                                    fontSize = 11.5.sp,
+                                    color = Color(0xFF263238),
+                                    lineHeight = 16.sp
+                                )
+                            }
+                            IconButton(
+                                onClick = { viewModel.deleteMoodLog(log.id) },
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .testTag("delete_mood_button_${log.id}")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete entry",
+                                    tint = Color(0xFFC62828),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
