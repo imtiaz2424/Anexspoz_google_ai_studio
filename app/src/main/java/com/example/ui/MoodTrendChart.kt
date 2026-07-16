@@ -25,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.graphics.drawscope.Stroke
 import com.example.viewmodel.DietPlannerViewModel
 import com.example.data.model.MoodLogEntity
 import java.text.SimpleDateFormat
@@ -99,16 +101,14 @@ fun MoodTrendChart(
 
     val selectedItem = weeklyData.getOrNull(selectedDayIndex)
 
-    Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    val isDark = isSystemInDarkTheme()
+    GlassmorphicCard(
         modifier = modifier
             .fillMaxWidth()
-            .testTag("mood_trend_chart_card")
+            .testTag("mood_trend_chart_card"),
+        isDark = isDark
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header Section
@@ -124,7 +124,7 @@ fun MoodTrendChart(
                     Box(
                         modifier = Modifier
                             .size(40.dp)
-                            .background(Color(0xFFE0F2F1), CircleShape),
+                            .background(if (isDark) Color(0xFF004D40) else Color(0xFFE0F2F1), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Text("📉", fontSize = 20.sp)
@@ -134,26 +134,26 @@ fun MoodTrendChart(
                             text = if (isBengali) "মনোভাবের সাপ্তাহিক গতিধারা" else "Weekly Mood Velocity",
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
-                            color = Color(0xFF004D40)
+                            color = if (isDark) Color(0xFF80CBC4) else Color(0xFF004D40)
                         )
                         Text(
                             text = if (isBengali) "রুম ডাটাবেজ থেকে সরাসরি আপনার আবেগীয় গ্রাফ বিশ্লেষণ" else "Live weekly trace of emotional scores synced with Room",
                             fontSize = 11.sp,
-                            color = Color.Gray
+                            color = if (isDark) Color(0xFF94A3B8) else Color.Gray
                         )
                     }
                 }
 
                 Box(
                     modifier = Modifier
-                        .background(Color(0xFFE0F2F1), RoundedCornerShape(10.dp))
+                        .background(if (isDark) Color(0xFF004D40) else Color(0xFFE0F2F1), RoundedCornerShape(10.dp))
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = if (isBengali) "সরাসরি" else "Live Status",
                         fontWeight = FontWeight.Bold,
                         fontSize = 10.sp,
-                        color = Color(0xFF00796B)
+                        color = if (isDark) Color(0xFF80CBC4) else Color(0xFF00796B)
                     )
                 }
             }
@@ -174,7 +174,7 @@ fun MoodTrendChart(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(180.dp)
-                    .background(Color(0xFFF5FBFB), RoundedCornerShape(18.dp))
+                    .background(if (isDark) Color(0xFF0F172A).copy(alpha = 0.5f) else Color(0xFFF5FBFB), RoundedCornerShape(18.dp))
                     .padding(8.dp)
             ) {
                 Canvas(
@@ -202,7 +202,7 @@ fun MoodTrendChart(
                     for (i in 0..4) {
                         val y = topPadding + (i * (graphHeight / 4f))
                         drawLine(
-                            color = Color(0xFFB2DFDB).copy(alpha = 0.4f),
+                            color = if (isDark) Color(0xFF334155).copy(alpha = 0.4f) else Color(0xFFB2DFDB).copy(alpha = 0.4f),
                             start = Offset(leftPadding, y),
                             end = Offset(leftPadding + graphWidth, y),
                             strokeWidth = 1.dp.toPx(),
@@ -243,37 +243,58 @@ fun MoodTrendChart(
                         pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f)
                     )
 
-                    // Draw the core trend fill area gradient brush
+                    // Draw the core trend fill area gradient brush using Bezier Cubic curves
                     val areaPath = Path().apply {
-                        moveTo(leftPadding, topPadding + graphHeight)
-                        points.forEach { pt ->
-                            val securedY = if (pt.y.isNaN() || pt.y.isInfinite()) topPadding + graphHeight else pt.y
-                            lineTo(pt.x, securedY)
+                        if (points.isNotEmpty()) {
+                            moveTo(points[0].x, topPadding + graphHeight)
+                            lineTo(points[0].x, points[0].y)
+                            for (i in 0 until points.size - 1) {
+                                val p0 = points[i]
+                                val p1 = points[i + 1]
+                                val conPointX1 = (p0.x + p1.x) / 2f
+                                val conPointY1 = p0.y
+                                val conPointX2 = (p0.x + p1.x) / 2f
+                                val conPointY2 = p1.y
+                                cubicTo(conPointX1, conPointY1, conPointX2, conPointY2, p1.x, p1.y)
+                            }
+                            lineTo(points.last().x, topPadding + graphHeight)
+                            close()
                         }
-                        lineTo(leftPadding + graphWidth, topPadding + graphHeight)
-                        close()
                     }
                     drawPath(
                         path = areaPath,
                         brush = Brush.verticalGradient(
-                            colors = listOf(Color(0xFF80CBC4).copy(alpha = 0.35f), Color(0xFFE0F2F1).copy(alpha = 0.01f)),
+                            colors = if (isDark) {
+                                listOf(Color(0xFF80CBC4).copy(alpha = 0.25f), Color(0xFF1E293B).copy(alpha = 0.01f))
+                            } else {
+                                listOf(Color(0xFF80CBC4).copy(alpha = 0.35f), Color(0xFFE0F2F1).copy(alpha = 0.01f))
+                            },
                             startY = topPadding,
                             endY = topPadding + graphHeight
                         )
                     )
 
-                    // Draw the primary trend line tracing spline
-                    for (i in 0 until points.size - 1) {
-                        val startPt = points[i]
-                        val endPt = points[i + 1]
-                        drawLine(
-                            color = Color(0xFF00796B),
-                            start = startPt,
-                            end = endPt,
-                            strokeWidth = 3.5.dp.toPx(),
-                            cap = StrokeCap.Round
-                        )
+                    // Draw the primary trend line tracing spline with Bezier smooth interpolation
+                    val strokePath = Path().apply {
+                        if (points.isNotEmpty()) {
+                            val start = points[0]
+                            moveTo(start.x, start.y)
+                            for (i in 0 until points.size - 1) {
+                                val p0 = points[i]
+                                val p1 = points[i + 1]
+                                val conPointX1 = (p0.x + p1.x) / 2f
+                                val conPointY1 = p0.y
+                                val conPointX2 = (p0.x + p1.x) / 2f
+                                val conPointY2 = p1.y
+                                cubicTo(conPointX1, conPointY1, conPointX2, conPointY2, p1.x, p1.y)
+                            }
+                        }
                     }
+                    drawPath(
+                        path = strokePath,
+                        color = Color(0xFF00796B),
+                        style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round)
+                    )
 
                      // Overlay and highlight point nodes
                     points.forEachIndexed { index, pt ->
@@ -320,7 +341,11 @@ fun MoodTrendChart(
                             topPadding + graphHeight + 22.dp.toPx(),
                             Paint().apply {
                                 textSize = 10.sp.toPx()
-                                color = if (index == selectedDayIndex) android.graphics.Color.BLACK else android.graphics.Color.GRAY
+                                color = if (index == selectedDayIndex) {
+                                    if (isDark) android.graphics.Color.WHITE else android.graphics.Color.BLACK
+                                } else {
+                                    android.graphics.Color.GRAY
+                                }
                                 isAntiAlias = true
                                 textAlign = Paint.Align.CENTER
                                 typeface = if (index == selectedDayIndex) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
@@ -333,7 +358,7 @@ fun MoodTrendChart(
             // Expanded interactive logger details
             selectedItem?.let { item ->
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFEEF8F6)),
+                    colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF1E293B) else Color(0xFFEEF8F6)),
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -350,7 +375,7 @@ fun MoodTrendChart(
                                 text = "${if (isBengali) "বিশ্লেষণ দিন:" else "Trend Day:"} ${item.label} (${item.dateStr})",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF004D40)
+                                color = if (isDark) Color(0xFF80CBC4) else Color(0xFF004D40)
                             )
 
                             val moodLabel = when (item.moodString.lowercase(Locale.ROOT)) {
@@ -365,7 +390,7 @@ fun MoodTrendChart(
                                 text = moodLabel,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Black,
-                                color = Color(0xFF00796B)
+                                color = if (isDark) Color(0xFF80CBC4) else Color(0xFF00796B)
                             )
                         }
 
@@ -386,7 +411,7 @@ fun MoodTrendChart(
                         Text(
                             text = trendInsight,
                             fontSize = 11.sp,
-                            color = Color(0xFF004D40),
+                            color = if (isDark) Color(0xFFE2E8F0) else Color(0xFF004D40),
                             fontWeight = FontWeight.Medium,
                             lineHeight = 15.sp
                         )
@@ -400,7 +425,7 @@ fun MoodTrendChart(
                                     "🍲 Food & Mood Linked: Diet and mood logs are synchronized for this day! Regularly fueling your body helps cultivate cognitive focus and stable emotional energy."
                                 },
                                 fontSize = 11.sp,
-                                color = Color(0xFF2E7D32),
+                                color = if (isDark) Color(0xFF81C784) else Color(0xFF2E7D32),
                                 fontWeight = FontWeight.Bold,
                                 lineHeight = 15.sp
                             )
@@ -410,13 +435,13 @@ fun MoodTrendChart(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(Color.White, RoundedCornerShape(8.dp))
+                                    .background(if (isDark) Color(0xFF0F172A) else Color.White, RoundedCornerShape(8.dp))
                                     .padding(8.dp)
                             ) {
                                 Text(
                                     text = "✏️ Memo: \"${item.moodNote}\"",
                                     fontSize = 11.sp,
-                                    color = Color.DarkGray,
+                                    color = if (isDark) Color(0xFFCBD5E1) else Color.DarkGray,
                                     style = androidx.compose.ui.text.TextStyle(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                                 )
                             }

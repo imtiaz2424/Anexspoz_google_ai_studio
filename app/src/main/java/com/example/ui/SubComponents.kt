@@ -242,29 +242,74 @@ fun ProfileMiniCard(userProfile: UserProfileEntity) {
 
 @Composable
 fun AIGeneratingStateCard() {
-    Card(
+    val isDark = isSystemInDarkTheme()
+    GlassmorphicCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+        isDark = isDark,
+        testTag = "ai_generating_skeleton_card"
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
+                .padding(6.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-            Text(
-                text = "AI is generating your meal plan...",
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
+            // Immersive Lottie-style breathing glow core
+            PremiumLottiePulse(
+                color = MaterialTheme.colorScheme.primary,
+                emoji = "🍲"
             )
-            Text(
-                text = "Tailoring nutrition guidelines dynamically based on your clinical conditions and location preferences.",
-                fontSize = 11.sp,
-                color = Color.Gray,
-                textAlign = TextAlign.Center
-            )
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "Niljori AI Tailoring Meal Plan...",
+                    fontWeight = FontWeight.Black,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "Analyzing personal metabolic constraints and location-based food databases",
+                    fontSize = 11.5.sp,
+                    color = if (isDark) Color(0xFF94A3B8) else Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            Divider(color = if (isDark) Color.White.copy(alpha = 0.1f) else Color.LightGray.copy(alpha = 0.4f))
+
+            // Subtitle skeleton simulation with glowing shimmer
+            val brush = shimmerBrush()
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(brush)
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.75f)
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(brush)
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.5f)
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(brush)
+                )
+            }
         }
     }
 }

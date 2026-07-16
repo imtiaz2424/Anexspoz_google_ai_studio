@@ -611,40 +611,12 @@ fun DietPlannerDashboard(viewModel: DietPlannerViewModel) {
                     }
                 },
                 bottomBar = {
-                    NavigationBar(
-                        containerColor = Color(0xFFF3F4F9)
-                    ) {
-                        NavigationBarItem(
-                            selected = currentTab == 0,
-                            onClick = { currentTab = 0 },
-                            icon = { Icon(Icons.Default.Home, contentDescription = "হোম (Home)") },
-                            label = { Text(if (isBengali) "হোম" else "Home", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-                        )
-                        NavigationBarItem(
-                            selected = currentTab == 1,
-                            onClick = { currentTab = 1 },
-                            icon = { Icon(Icons.Default.RestaurantMenu, contentDescription = "নাস্তা ও খাবার (Diet Plan)") },
-                            label = { Text(if (isBengali) "খাবার" else "Meals", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-                        )
-                        NavigationBarItem(
-                            selected = currentTab == 2,
-                            onClick = { currentTab = 2 },
-                            icon = { Icon(Icons.Default.Explore, contentDescription = "এক্সপলোর (Explore)") },
-                            label = { Text(if (isBengali) "এক্সপ্লোর" else "Explore", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-                        )
-                        NavigationBarItem(
-                            selected = currentTab == 3,
-                            onClick = { currentTab = 3 },
-                            icon = { Icon(Icons.Default.TrendingUp, contentDescription = "ওজন ও ট্র্যাক (Progress)") },
-                            label = { Text(if (isBengali) "ট্র্যাকার" else "Tracker", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-                        )
-                        NavigationBarItem(
-                            selected = currentTab == 4,
-                            onClick = { currentTab = 4 },
-                            icon = { Icon(Icons.Default.AccountCircle, contentDescription = "প্রোফাইল (Profile)") },
-                            label = { Text(if (isBengali) "অ্যাকাউন্ট" else "Account", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-                        )
-                    }
+                    FloatingGlassNavigationBar(
+                        currentTab = currentTab,
+                        onTabSelected = { currentTab = it },
+                        isBengali = isBengali,
+                        isDark = isDarkTheme
+                    )
                 },
                 floatingActionButton = {
                     if (currentTab == 1 && userProfile != null && !isGenerating) {
