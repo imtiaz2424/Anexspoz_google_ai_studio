@@ -20,6 +20,11 @@ data class UserProfileEntity(
     val medical_conditions: List<String> = listOf("None"),
     val cuisine_preferences: List<String> = listOf("Bengali"),
     val activityLevel: String = "moderate",
+    val targetWeight: Double = 0.0,
+    val bodyFatPercentage: Double = 0.0,
+    val religionPreference: String = "None",
+    val country: String = "Bangladesh",
+    val language: String = "English",
     val lastUpdated: Long = System.currentTimeMillis()
 ) {
     @Ignore
@@ -37,6 +42,11 @@ data class UserProfileEntity(
         medicalConditions: String = "None",
         cuisinePreferences: String = "Bengali",
         activityLevel: String = "moderate",
+        targetWeight: Double = 0.0,
+        bodyFatPercentage: Double = 0.0,
+        religionPreference: String = "None",
+        country: String = "Bangladesh",
+        language: String = "English",
         lastUpdated: Long = System.currentTimeMillis()
     ) : this(
         id = id,
@@ -52,6 +62,11 @@ data class UserProfileEntity(
         medical_conditions = medicalConditions.split(",").map { it.trim() }.filter { it.isNotEmpty() },
         cuisine_preferences = cuisinePreferences.split(",").map { it.trim() }.filter { it.isNotEmpty() },
         activityLevel = activityLevel,
+        targetWeight = targetWeight,
+        bodyFatPercentage = bodyFatPercentage,
+        religionPreference = religionPreference,
+        country = country,
+        language = language,
         lastUpdated = lastUpdated
     )
 

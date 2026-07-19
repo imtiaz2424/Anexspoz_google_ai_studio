@@ -63,7 +63,22 @@ fun ProfileSetupView(
     var cuisineInput by remember { mutableStateOf("Bengali") }
 
     val genders = listOf("Male", "Female", "Other")
-    val goals = listOf("Weight Loss", "Maintain Weight", "Weight Gain")
+    val goals = listOf(
+        "Weight Loss",
+        "Weight Gain",
+        "Maintain Weight",
+        "Muscle Gain",
+        "Fat Loss",
+        "Body Recomposition",
+        "Healthy Lifestyle",
+        "Diabetic Diet",
+        "Pregnancy Diet",
+        "Keto",
+        "Vegan",
+        "Vegetarian",
+        "Mediterranean",
+        "Intermittent Fasting"
+    )
     val preferences = listOf("Vegetarian", "Non-Vegetarian", "Vegan", "Keto")
 
     Column(

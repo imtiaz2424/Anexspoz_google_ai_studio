@@ -21,7 +21,7 @@ import androidx.room.TypeConverters
         RecipeEntity::class,
         MoodLogEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

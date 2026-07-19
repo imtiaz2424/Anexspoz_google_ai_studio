@@ -38,8 +38,45 @@ fun UserProfileSetupScreen(
     var ageText by remember { mutableStateOf("25") }
     var weightText by remember { mutableStateOf("70.0") }
     var heightText by remember { mutableStateOf("175.0") }
+    var targetWeightText by remember { mutableStateOf("65.0") }
+    var bodyFatText by remember { mutableStateOf("18.0") }
+    var waterTargetSlider by remember { mutableStateOf(2.5f) } // default 2.5 Liters
     var selectedGender by remember { mutableStateOf("Male") }
     var selectedActivityLevel by remember { mutableStateOf("moderate") }
+
+    // Medical Conditions Checklist
+    val predefinedMedicalConditions = listOf(
+        "None" to (if (isBengali) "কিছুই না (None)" else "None / Healthy"),
+        "Diabetes" to (if (isBengali) "ডায়াবেটিস (Diabetes)" else "Diabetes / High Blood Sugar"),
+        "Hypertension" to (if (isBengali) "উচ্চ রক্তচাপ (Hypertension)" else "Hypertension / High BP"),
+        "Thyroid" to (if (isBengali) "থাইরয়েড (Thyroid)" else "Thyroid Imbalance"),
+        "Pregnancy" to (if (isBengali) "গর্ভাবস্থা (Pregnancy)" else "Pregnancy Diet Plan"),
+        "Kidney Issue" to (if (isBengali) "কিডনি সমস্যা (Kidney Disease)" else "Kidney / Renal Care")
+    )
+    var selectedMedicalConditionsSet by remember { mutableStateOf(setOf<String>("None")) }
+    var customMedicalInput by remember { mutableStateOf("") }
+
+    // Religion Food Preference Selection State
+    var selectedReligionPreference by remember { mutableStateOf("None") }
+    val religionPreferenceList = listOf(
+        "None" to (if (isBengali) "কোনোটিই নয় (No Preference)" else "No religious restrictions"),
+        "Halal" to (if (isBengali) "হালাল খাবার (Halal Food Only)" else "Halal Foods"),
+        "Kosher" to (if (isBengali) "কোশার খাবার (Kosher Food)" else "Kosher Foods"),
+        "Vegetarian" to (if (isBengali) "নিরামিষ (Religious Vegetarian)" else "Strict Vegetarian / No Eggs")
+    )
+
+    // Country selection
+    var selectedCountry by remember { mutableStateOf("Bangladesh") }
+    val countriesList = listOf(
+        "Bangladesh" to (if (isBengali) "বাংলাদেশ (Bangladesh)" else "Bangladesh"),
+        "India" to (if (isBengali) "ভারত (India)" else "India"),
+        "USA" to (if (isBengali) "যুক্তরাষ্ট্র (USA)" else "USA"),
+        "UK" to (if (isBengali) "যুক্তরাজ্য (UK)" else "UK"),
+        "Saudi Arabia" to (if (isBengali) "সৌদি আরব (Saudi Arabia)" else "Saudi Arabia")
+    )
+
+    // Language selection
+    var selectedLanguage by remember { mutableStateOf(if (isBengali) "Bengali" else "English") }
 
     // Dietary Preferences Selection State
     var selectedPreference by remember { mutableStateOf("Non-Vegetarian") }
@@ -66,8 +103,19 @@ fun UserProfileSetupScreen(
     var selectedGoal by remember { mutableStateOf("Weight Loss") }
     val goalsList = listOf(
         "Weight Loss" to (if (isBengali) "ওজন কমানো (Weight Loss)" else "Weight Loss / Fat Burn"),
-        "Maintain Weight" to (if (isBengali) "ওজন ধরে রাখা (Maintain)" else "Maintain Weight & Fit"),
-        "Weight Gain" to (if (isBengali) "ওজন বাড়ানো (Weight Gain)" else "Weight Gain / Bulk Up")
+        "Weight Gain" to (if (isBengali) "ওজন বাড়ানো (Weight Gain)" else "Weight Gain / Bulk Up"),
+        "Maintain Weight" to (if (isBengali) "ওজন ধরে রাখা (Maintain Weight)" else "Maintain Weight & Fit"),
+        "Muscle Gain" to (if (isBengali) "পেশী গঠন (Muscle Gain)" else "Muscle Gain / Hypertrophy"),
+        "Fat Loss" to (if (isBengali) "মেদ কমানো (Fat Loss)" else "Fat Loss / Lean Sculpting"),
+        "Body Recomposition" to (if (isBengali) "বডি রিকম্পোজিশন (Body Recomp)" else "Body Recomposition (Fat to Muscle)"),
+        "Healthy Lifestyle" to (if (isBengali) "সুস্থ জীবনধারা (Healthy Lifestyle)" else "Healthy Lifestyle & Longevity"),
+        "Diabetic Diet" to (if (isBengali) "ডায়াবেটিক ডায়েট (Diabetic Diet)" else "Diabetic-Friendly Diet Plan"),
+        "Pregnancy Diet" to (if (isBengali) "গর্ভাবস্থা ডায়েট (Pregnancy Diet)" else "Pregnancy Diet & Maternal Care"),
+        "Keto" to (if (isBengali) "কেটো ডায়েট (Keto Diet)" else "Keto / Low-Carb High-Fat"),
+        "Vegan" to (if (isBengali) "ভেগান ডায়েট (Vegan)" else "Vegan / Plant-Based"),
+        "Vegetarian" to (if (isBengali) "নিরামিষ ডায়েট (Vegetarian)" else "Vegetarian / No Meat"),
+        "Mediterranean" to (if (isBengali) "মেডিটেরিয়ান ডায়েট (Mediterranean)" else "Mediterranean Heart Healthy"),
+        "Intermittent Fasting" to (if (isBengali) "ইন্টারমিটেন্ট ফাস্টিং (Fasting)" else "Intermittent Fasting Schedule")
     )
 
     Scaffold(
@@ -508,6 +556,55 @@ fun UserProfileSetupScreen(
                                 shape = RoundedCornerShape(12.dp)
                             )
                         }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = targetWeightText,
+                                onValueChange = { targetWeightText = it },
+                                label = { Text(if (isBengali) "লক্ষ্য ওজন (কেজি)" else "Target Weight (kg)") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("onboarding_target_weight_input"),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+
+                            OutlinedTextField(
+                                value = bodyFatText,
+                                onValueChange = { bodyFatText = it },
+                                label = { Text(if (isBengali) "শরীরের চর্বি %" else "Body Fat %") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("onboarding_body_fat_input"),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = if (isBengali)
+                                    "প্রতিদিন জল খাওয়ার লক্ষ্য: ${String.format("%.1f", waterTargetSlider)} লিটার (${(waterTargetSlider * 1000).toInt()} মিলি)"
+                                    else "Daily Water Intake Target: ${String.format("%.1f", waterTargetSlider)} Liters (${(waterTargetSlider * 1000).toInt()} ml)",
+                                fontSize = 11.sp,
+                                color = Color.Gray,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Slider(
+                                value = waterTargetSlider,
+                                onValueChange = { waterTargetSlider = it },
+                                valueRange = 1.5f..5.5f,
+                                colors = SliderDefaults.colors(
+                                    thumbColor = Color(0xFF0288D1),
+                                    activeTrackColor = Color(0xFF03A9F4)
+                                )
+                            )
+                        }
                     }
                 }
 
@@ -593,7 +690,272 @@ fun UserProfileSetupScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                // STEP 6: Medical Conditions & Religion Food Preference
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = BorderStroke(1.dp, Color(0xFFECEFF1)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = Color(0xFFD84315),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = if (isBengali) "৬. চিকিৎসা সংক্রান্ত অবস্থা ও ধর্মীয় বিধি" else "6. Medical & Religious Preferences",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = Color(0xFF263238)
+                            )
+                        }
+
+                        Text(
+                            text = if (isBengali) "চিকিৎসা সংক্রান্ত কোনো বিধি-নিষেধ থাকলে তা বাছুন:" else "Select any chronic medical conditions to personalize AI formulas:",
+                            fontSize = 11.sp,
+                            color = Color.Gray
+                        )
+
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            predefinedMedicalConditions.forEach { pair ->
+                                val key = pair.first
+                                val label = pair.second
+                                val isSelected = selectedMedicalConditionsSet.contains(key)
+
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = {
+                                        selectedMedicalConditionsSet = if (key == "None") {
+                                            setOf("None")
+                                        } else {
+                                            val currentSet = selectedMedicalConditionsSet - "None"
+                                            if (isSelected) {
+                                                if (currentSet.isEmpty() || currentSet.size == 1) {
+                                                    setOf("None")
+                                                } else {
+                                                    currentSet - key
+                                                }
+                                            } else {
+                                                currentSet + key
+                                            }
+                                        }
+                                    },
+                                    label = {
+                                        Text(text = label, fontSize = 11.sp)
+                                    },
+                                    leadingIcon = if (isSelected) {
+                                        {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
+                                    } else null,
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Color(0xFFFFCCBC),
+                                        selectedLabelColor = Color(0xFFD84315)
+                                    )
+                                )
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = customMedicalInput,
+                            onValueChange = { customMedicalInput = it },
+                            label = {
+                                Text(
+                                    text = if (isBengali) "অন্যান্য চিকিৎসা সমস্যা থাকলে লিখুন" else "Other medical conditions (comma separated)",
+                                    fontSize = 11.sp
+                                )
+                            },
+                            placeholder = { Text("e.g. Gastric, Uric Acid, Migraine") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("onboarding_medical_custom_input"),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        Divider(color = Color(0xFFECEFF1), modifier = Modifier.padding(vertical = 4.dp))
+
+                        Text(
+                            text = if (isBengali) "ধর্মীয় খাবারের পছন্দ (Religious Food Preference):" else "Religious Food Preferences (e.g. Halal, Kosher):",
+                            fontSize = 11.sp,
+                            color = Color.Gray,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            religionPreferenceList.forEach { item ->
+                                val key = item.first
+                                val label = item.second
+                                val isSelected = selectedReligionPreference == key
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (isSelected) Color(0xFFFBE9E7) else Color(0xFFF5F7F6))
+                                        .border(
+                                            1.dp,
+                                            if (isSelected) Color(0xFFD84315) else Color(0xFFECEFF1),
+                                            RoundedCornerShape(10.dp)
+                                        )
+                                        .clickable { selectedReligionPreference = key }
+                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = label,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 12.sp,
+                                        color = if (isSelected) Color(0xFFBF360C) else Color(0xFF37474F)
+                                    )
+                                    RadioButton(
+                                        selected = isSelected,
+                                        onClick = { selectedReligionPreference = key },
+                                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFD84315))
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // STEP 7: Location & Language
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = BorderStroke(1.dp, Color(0xFFECEFF1)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = Color(0xFF00796B),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = if (isBengali) "৭. দেশ ও ভাষা নির্ধারণ করুন" else "7. Choose Country & Language",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = Color(0xFF263238)
+                            )
+                        }
+
+                        Text(
+                            text = if (isBengali) "আপনার দেশ নির্বাচন করুন:" else "Select your Country:",
+                            fontSize = 11.sp,
+                            color = Color.Gray,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            countriesList.forEach { item ->
+                                val key = item.first
+                                val label = item.second
+                                val isSelected = selectedCountry == key
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (isSelected) Color(0xFFE0F2F1) else Color(0xFFF5F7F6))
+                                        .border(
+                                            1.dp,
+                                            if (isSelected) Color(0xFF00796B) else Color(0xFFECEFF1),
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                        .clickable { selectedCountry = key }
+                                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = label,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 11.sp,
+                                        color = if (isSelected) Color(0xFF004D40) else Color(0xFF37474F)
+                                    )
+                                    RadioButton(
+                                        selected = isSelected,
+                                        onClick = { selectedCountry = key },
+                                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00796B))
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = if (isBengali) "আপনার অ্যাপের ভাষা নির্বাচন করুন:" else "Select App Language:",
+                            fontSize = 11.sp,
+                            color = Color.Gray,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            listOf("English" to "English", "Bengali" to "বাংলা (Bengali)").forEach { (key, label) ->
+                                val isSelected = selectedLanguage == key
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(44.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (isSelected) Color(0xFFE0F2F1) else Color(0xFFF5F7F6))
+                                        .border(
+                                            1.dp,
+                                            if (isSelected) Color(0xFF00796B) else Color(0xFFECEFF1),
+                                            RoundedCornerShape(10.dp)
+                                        )
+                                        .clickable { selectedLanguage = key },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 12.sp,
+                                        color = if (isSelected) Color(0xFF004D40) else Color.DarkGray
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // SAVE BUTTON
                 Button(
@@ -601,9 +963,17 @@ fun UserProfileSetupScreen(
                         val finalAge = ageText.toIntOrNull() ?: 25
                         val finalWeight = weightText.toDoubleOrNull() ?: 70.0
                         val finalHeight = heightText.toDoubleOrNull() ?: 175.0
+                        val finalTargetWeight = targetWeightText.toDoubleOrNull() ?: 65.0
+                        val finalBodyFat = bodyFatText.toDoubleOrNull() ?: 18.0
+                        val finalWaterMl = (waterTargetSlider * 1000).toInt()
 
                         // Compile composite allergies list (predefined + custom input text)
                         val activeAllergies = (selectedAllergiesSet + customAllergyInput.split(",")
+                            .map { it.trim() }
+                            .filter { it.isNotEmpty() }).distinct().joinToString(", ")
+
+                        // Compile composite medical conditions list
+                        val activeMedicalConditions = (selectedMedicalConditionsSet + customMedicalInput.split(",")
                             .map { it.trim() }
                             .filter { it.isNotEmpty() }).distinct().joinToString(", ")
 
@@ -616,10 +986,19 @@ fun UserProfileSetupScreen(
                             goal = selectedGoal,
                             dietaryPreference = selectedPreference,
                             allergies = activeAllergies,
-                            medicalConditions = "None", // default
-                            cuisinePreferences = "Bengali", // default
-                            activityLevel = selectedActivityLevel
+                            medicalConditions = activeMedicalConditions,
+                            cuisinePreferences = "Bengali",
+                            activityLevel = selectedActivityLevel,
+                            targetWeight = finalTargetWeight,
+                            bodyFatPercentage = finalBodyFat,
+                            religionPreference = selectedReligionPreference,
+                            country = selectedCountry,
+                            language = selectedLanguage,
+                            customWaterIntakeMl = finalWaterMl
                         )
+
+                        // If user selected language, update language settings
+                        viewModel.setBengali(selectedLanguage == "Bengali")
 
                         // Fire completion callback to redirect user
                         onComplete()

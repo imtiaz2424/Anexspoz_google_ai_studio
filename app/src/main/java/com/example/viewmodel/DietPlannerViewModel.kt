@@ -324,7 +324,13 @@ class DietPlannerViewModel(
         allergies: String,
         medicalConditions: String = "None",
         cuisinePreferences: String = "Bengali",
-        activityLevel: String = "moderate"
+        activityLevel: String = "moderate",
+        targetWeight: Double = 0.0,
+        bodyFatPercentage: Double = 0.0,
+        religionPreference: String = "None",
+        country: String = "Bangladesh",
+        language: String = "English",
+        customWaterIntakeMl: Int? = null
     ) {
         viewModelScope.launch {
             // Mifflin - St Jeor formula offline baseline target calories
@@ -355,10 +361,15 @@ class DietPlannerViewModel(
                 dietaryPreference = dietaryPreference,
                 allergies = allergies,
                 dailyCalorieTarget = targetCalories,
-                dailyWaterTargetMl = (weight * 35).toInt().coerceIn(2000, 4000),
+                dailyWaterTargetMl = customWaterIntakeMl ?: (weight * 35).toInt().coerceIn(2000, 4500),
                 medicalConditions = medicalConditions,
                 cuisinePreferences = cuisinePreferences,
-                activityLevel = activityLevel
+                activityLevel = activityLevel,
+                targetWeight = targetWeight,
+                bodyFatPercentage = bodyFatPercentage,
+                religionPreference = religionPreference,
+                country = country,
+                language = language
             )
 
             repository.saveUserProfile(profile)
@@ -678,6 +689,12 @@ class DietPlannerViewModel(
         _isBengali.value = newValue
         val sharedPrefs = context.getSharedPreferences("niljori_settings", Context.MODE_PRIVATE)
         sharedPrefs.edit().putBoolean("is_bengali", newValue).apply()
+    }
+
+    fun setBengali(isBengali: Boolean) {
+        _isBengali.value = isBengali
+        val sharedPrefs = context.getSharedPreferences("niljori_settings", Context.MODE_PRIVATE)
+        sharedPrefs.edit().putBoolean("is_bengali", isBengali).apply()
     }
 
     fun preloadAllDemoDataForUser(uid: String) {
