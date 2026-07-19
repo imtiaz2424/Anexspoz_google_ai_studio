@@ -291,6 +291,10 @@ class DietPlannerViewModel(
         _selectedDate.value = dateString
     }
 
+    fun upgradeToPremium() {
+        _eventMessage.value = "Congratulations! You have successfully upgraded to Premium. All Clinical AI features and offline databases are unlocked!"
+    }
+
     fun clearEventMessage() {
         _eventMessage.value = null
     }

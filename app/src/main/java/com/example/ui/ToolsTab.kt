@@ -62,6 +62,28 @@ fun ToolsTab(
     val foodLogs by viewModel.allFoodLogs.collectAsState()
     val exerciseLogs by viewModel.allExerciseLogs.collectAsState()
 
+    var showPremiumAISuite by rememberSaveable { mutableStateOf(false) }
+    var showControlCenter by rememberSaveable { mutableStateOf(false) }
+
+    if (showPremiumAISuite) {
+        PremiumAISuite(
+            viewModel = viewModel,
+            userProfile = userProfile,
+            isBengali = isBengali,
+            onBack = { showPremiumAISuite = false }
+        )
+        return
+    }
+
+    if (showControlCenter) {
+        AdminSecurityPremiumHub(
+            viewModel = viewModel,
+            isBengali = isBengali,
+            onBack = { showControlCenter = false }
+        )
+        return
+    }
+
     // Form builder states for adding custom reminder
     var isExpandedReminderForm by rememberSaveable { mutableStateOf(false) }
     var reminderNameInput by rememberSaveable { mutableStateOf("") }
@@ -596,6 +618,32 @@ fun ToolsTab(
             modifier = Modifier
                 .align(Alignment.Start)
                 .padding(top = 4.dp, bottom = 2.dp)
+        )
+
+        // --- PREMIUM AI SUITE HERO ENTRY CARD ---
+        DashboardGridCard(
+            title = if (isBengali) "🤖 নীলজরি প্রিমিয়াম এআই ও ট্র্যাকার হাব" else "🤖 Niljori Premium AI Hub",
+            subtitle = if (isBengali) "১৩টি শক্তিশালী এআই টুলস, খাদ্য ডাটাবেস ও গ্রাফিকাল স্ট্যাটস" else "13 Clinical AI Tools, 100k Database & Water Graphics",
+            icon = Icons.Default.AutoAwesome,
+            isActive = true,
+            badge = "Premium Suite",
+            colorScheme = Color(0xFF673AB7),
+            backgroundColor = Color(0xFFEDE7F6),
+            modifier = Modifier.fillMaxWidth().testTag("grid_card_premium_ai_suite"),
+            onClick = { showPremiumAISuite = true }
+        )
+
+        // --- CONTROL CENTER HERO ENTRY CARD (Requested Features) ---
+        DashboardGridCard(
+            title = if (isBengali) "🛠️ অ্যাডমিন প্যানেল, নিরাপত্তা ও প্রিমিয়াম হাব" else "🛠️ Admin, Security & Premium Hub",
+            subtitle = if (isBengali) "কন্ট্রোল সেন্টার, জেডাব্লিউটি ডিকোডার, ওটিপি, স্ট্রাইপ গেটওয়ে সিমুলেটর" else "Admin panel, JWT Decoder, OTP, Stripe, Google Play Billing & HTTPS Simulator",
+            icon = Icons.Default.Settings,
+            isActive = true,
+            badge = "Control Center",
+            colorScheme = Color(0xFF0288D1),
+            backgroundColor = Color(0xFFE0F7FA),
+            modifier = Modifier.fillMaxWidth().testTag("grid_card_control_center"),
+            onClick = { showControlCenter = true }
         )
 
         Row(
